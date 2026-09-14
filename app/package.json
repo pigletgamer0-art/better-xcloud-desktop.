@@ -1,7 +1,7 @@
 {
   "name": "better-xcloud-desktop",
   "version": "2.6.0",
-  "description": "Better xCloud Desktop with integrated Ultra Assistant",
+  "description": "Better xCloud Desktop",
   "main": "main.js",
   "productName": "Better xCloud Desktop",
   "author": "Better xCloud Desktop package",
