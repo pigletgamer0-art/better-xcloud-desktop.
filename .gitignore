@@ -1,0 +1,16 @@
+# Build outputs
+installer/BetterXcloud-Desktop-Setup-*.exe
+installer/embedded/
+dist/
+
+# Runtime / local data
+runtime-v*/
+logs/
+updates/
+*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
