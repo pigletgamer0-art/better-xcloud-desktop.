@@ -70,6 +70,8 @@ SHA-256 esperado:
 
 ## Licencias y atribución
 
-Better xCloud fue creado por **redphx** y su cabecera indica licencia MIT. Electron también se distribuye bajo licencia MIT. Consulta `NOTICE.txt` para más información.
+**Better xCloud** fue creado por **redphx**. La idea, el nombre y la funcionalidad original de Better xCloud provienen del proyecto original de redphx. **Better xCloud Desktop** es únicamente un wrapper/cliente de escritorio comunitario no oficial construido alrededor de ese proyecto y no pretende presentarse como el proyecto original ni como una versión oficial.
 
-El código de este empaquetado se publica bajo licencia MIT salvo componentes de terceros, que conservan sus respectivas licencias.
+Better xCloud se distribuye bajo la licencia MIT. La copia completa de su licencia original, incluyendo todos los avisos de copyright que deben conservarse, está en `LICENSE-BETTER-XCLOUD.txt`. Consulta también `NOTICE.txt` para la atribución de componentes de terceros.
+
+Electron también se distribuye bajo licencia MIT. El código propio de este empaquetado se publica bajo licencia MIT salvo componentes de terceros, que conservan sus respectivas licencias.
