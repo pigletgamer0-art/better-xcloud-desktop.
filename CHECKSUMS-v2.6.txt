@@ -1,0 +1,2 @@
+b7d4f7df4b71e8c728298bc61b615e8dee68dfae9d1d0061316a2d3a9da343bc  BetterXcloud-Desktop-Setup-v2.6.exe
+58a44b567756d28666cb0c22bd5d2aac26bd54d44a61983e5a5ed772d3ffe320  BetterXcloud-Desktop-v2.6-Source.zip
