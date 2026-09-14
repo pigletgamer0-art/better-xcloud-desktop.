@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -89,3 +89,17 @@ jobs:
             build/repo_src/installer/BetterXcloud-Desktop-Setup-v2.6.sha256.txt
           if-no-files-found: error
           compression-level: 0
+
+      - name: Publish v2.6.0 GitHub Release
+        if: github.event_name == 'push' && github.event.head_commit.message == 'Publish v2.6.0 release'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          exe='build/repo_src/installer/BetterXcloud-Desktop-Setup-v2.6.exe'
+          sums='build/repo_src/installer/BetterXcloud-Desktop-Setup-v2.6.sha256.txt'
+          gh release create v2.6.0 "$exe" "$sums" \
+            --target "$GITHUB_SHA" \
+            --title 'Better xCloud Desktop v2.6.0' \
+            --notes $'First stable installer release.\n\n- Independent desktop app; does not launch Microsoft Edge.\n- Includes Better xCloud 6.7.12 (MIT) and Ultra Assistant 2.0.0.\n- Uses Electron 44.3.0 / Chromium as its private runtime.\n- Registers in Windows Installed Apps and includes an uninstaller.\n- Preserves Xbox session and Better xCloud settings when updating.\n- Includes SHA-256 checksum for the installer.\n\nThis is an unofficial community desktop wrapper and is not affiliated with Microsoft, Xbox, or the Better xCloud project.'
