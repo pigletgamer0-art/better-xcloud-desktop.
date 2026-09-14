@@ -12,7 +12,7 @@ jobs:
   build:
     # The repository name currently ends in a dot. Windows runners cannot
     # create that checkout directory, so we cross-compile the Windows EXE
-    # from an Ubuntu runner instead.
+    # from Ubuntu instead.
     runs-on: ubuntu-latest
 
     steps:
@@ -23,16 +23,16 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.22.x'
+          cache: false
 
-      - name: Reconstruct source package
+      - name: Extract source package
         shell: bash
         run: |
           set -euo pipefail
-          count=$(find source-package -maxdepth 1 -name 'part-*.b64' | wc -l)
-          test "$count" -eq 8 || { echo "Expected 8 source package parts, found $count"; exit 1; }
-          cat source-package/part-*.b64 | base64 --decode > repo-source-min.zip
+          test -f source-package/repo-source-min.zip
+          echo 'cb526df0b52c22b395637ce1f1d686668835d484bfd64933db319221166f734b  source-package/repo-source-min.zip' | sha256sum -c -
           mkdir -p build
-          unzip -q repo-source-min.zip -d build
+          unzip -q source-package/repo-source-min.zip -d build
 
       - name: Download pinned Better xCloud 6.7.12
         shell: bash
