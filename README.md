@@ -4,7 +4,27 @@ Aplicación independiente para **Windows 10/11 x64** que ejecuta Xbox Cloud Gami
 
 > Proyecto no oficial. No está afiliado con Microsoft, Xbox ni con el autor original de Better xCloud.
 
-## Versión actual
+## Beta pública — v2.7.7
+
+**The Version It Should Have Been — Beta Preview**
+
+La beta pública **v2.7.7** está disponible en la rama `beta-v2.7.7`.
+
+Incluye:
+
+- Perfiles automáticos para controles Xbox, PlayStation y Nintendo/Switch.
+- Símbolos de PlayStation y soporte ABXY/BAYX para Nintendo.
+- `MIC Sensitivity` para juegos que usan micrófono, incluidos audífonos/headsets.
+- Native Look con las correcciones de estabilidad de las betas 2.7.4–2.7.6.
+- `Alt + F9`: Ultra Assistant.
+- `Alt + F10`: Stream Health.
+- `Ctrl + Shift + M`: MIC Sensitivity.
+
+Notas completas: `BETA-v2.7.7.md` en la rama `beta-v2.7.7`.
+
+> La rama `main` sigue siendo la versión estable mientras se prueba la beta.
+
+## Versión estable actual
 
 **2.6.0**
 
