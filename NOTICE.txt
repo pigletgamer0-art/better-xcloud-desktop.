@@ -1,0 +1,9 @@
+Better xCloud Desktop 2.6 incluye una copia del userscript Better xCloud proporcionado para este proyecto.
+El encabezado del archivo indica autor redphx y licencia MIT.
+
+La app puede comprobar y descargar automáticamente una versión posterior del userscript Better xCloud desde el release oficial de redphx en GitHub. Las actualizaciones se validan antes de almacenarse.
+
+Electron se descarga desde los releases oficiales de electron/electron en GitHub.
+Electron se distribuye bajo licencia MIT; las dependencias de Chromium y componentes incluidos mantienen sus licencias correspondientes.
+
+Ultra Assistant Add-on 2.0.0 fue incluido desde el archivo proporcionado por el usuario para esta compilación.
