@@ -51,6 +51,84 @@ jobs:
           mkdir -p build
           unzip -q repo-source-min.zip -d build
 
+      - name: Remove trial Ultra Assistant
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          root = Path('build/repo_src')
+
+          addon = root / 'app/scripts/ultra-assistant.user.js'
+          if addon.exists():
+              addon.unlink()
+
+          preload = root / 'app/preload.js'
+          text = preload.read_text(encoding='utf-8')
+          text = text.replace(
+              '  // IMPORTANT: Better xCloud and Ultra Assistant use separate try/catch blocks.\n'
+              '  // One failing must never prevent the other from being installed.\n',
+              ''
+          )
+          start = text.find("\n  try {\n    const ultra = readScript('ultra-assistant.user.js');")
+          if start != -1:
+              end = text.find("\n  }\n", start)
+              if end == -1:
+                  raise SystemExit('Could not remove Ultra Assistant preload block')
+              text = text[:start] + '\n' + text[end + len("\n  }\n"):]
+          preload.write_text(text, encoding='utf-8')
+
+          main = root / 'app/main.js'
+          text = main.read_text(encoding='utf-8')
+          text = text.replace(
+              ",\n        ultraAssistant: !!document.getElementById('bx-ultra-assistant-addon-style') || !!document.getElementById('bx-ultra-assistant-fallback-button')",
+              ''
+          )
+          main.write_text(text, encoding='utf-8')
+
+          package = root / 'app/package.json'
+          package.write_text(
+              package.read_text(encoding='utf-8').replace(
+                  'Better xCloud Desktop with integrated Ultra Assistant',
+                  'Better xCloud Desktop'
+              ),
+              encoding='utf-8'
+          )
+
+          notice = root / 'NOTICE.txt'
+          text = notice.read_text(encoding='utf-8')
+          text = text.replace(
+              '\nUltra Assistant Add-on 2.0.0 fue incluido desde el archivo proporcionado por el usuario para esta compilación.\n',
+              '\n'
+          )
+          notice.write_text(text.rstrip() + '\n', encoding='utf-8')
+
+          installer = root / 'installer/main.go'
+          text = installer.read_text(encoding='utf-8')
+          text = text.replace('Better xCloud Desktop con Ultra Assistant integrado', 'Better xCloud Desktop')
+          text = text.replace(
+              'los ajustes de Better xCloud, Ultra Assistant y los registros',
+              'los ajustes de Better xCloud y los registros'
+          )
+          installer.write_text(text, encoding='utf-8')
+
+          forbidden = re.compile(r'Ultra Assistant|ultra-assistant|Alt\s*\+\s*F9', re.I)
+          hits = []
+          for path in root.rglob('*'):
+              if not path.is_file():
+                  continue
+              try:
+                  data = path.read_text(encoding='utf-8')
+              except UnicodeDecodeError:
+                  continue
+              if forbidden.search(data):
+                  hits.append(str(path))
+          if hits:
+              raise SystemExit('Ultra Assistant references remain: ' + ', '.join(hits))
+          PY
+
       - name: Download pinned Better xCloud 6.7.12
         shell: bash
         run: |
@@ -90,8 +168,8 @@ jobs:
           if-no-files-found: error
           compression-level: 0
 
-      - name: Publish v2.6.0 GitHub Release
-        if: github.event_name == 'push' && github.event.head_commit.message == 'Publish v2.6.0 release'
+      - name: Replace v2.6.0 release without Ultra Assistant
+        if: github.event_name == 'push' && github.event.head_commit.message == 'Remove Ultra Assistant'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -99,7 +177,7 @@ jobs:
           set -euo pipefail
           exe='build/repo_src/installer/BetterXcloud-Desktop-Setup-v2.6.exe'
           sums='build/repo_src/installer/BetterXcloud-Desktop-Setup-v2.6.sha256.txt'
-          gh release create v2.6.0 "$exe" "$sums" \
-            --target "$GITHUB_SHA" \
+          gh release upload v2.6.0 "$exe" "$sums" --clobber
+          gh release edit v2.6.0 \
             --title 'Better xCloud Desktop v2.6.0' \
-            --notes $'First stable installer release.\n\n- Independent desktop app; does not launch Microsoft Edge.\n- Includes Better xCloud 6.7.12 (MIT) and Ultra Assistant 2.0.0.\n- Uses Electron 44.3.0 / Chromium as its private runtime.\n- Registers in Windows Installed Apps and includes an uninstaller.\n- Preserves Xbox session and Better xCloud settings when updating.\n- Includes SHA-256 checksum for the installer.\n\nThis is an unofficial community desktop wrapper and is not affiliated with Microsoft, Xbox, or the Better xCloud project.'
+            --notes $'Stable installer release.\n\n- Independent desktop app; does not launch Microsoft Edge.\n- Includes Better xCloud 6.7.12 (MIT).\n- Uses Electron 44.3.0 / Chromium as its private runtime.\n- Registers in Windows Installed Apps and includes an uninstaller.\n- Preserves Xbox session and Better xCloud settings when updating.\n- Includes SHA-256 checksum for the installer.\n\nThis is an unofficial community desktop wrapper and is not affiliated with Microsoft, Xbox, or the Better xCloud project.'
