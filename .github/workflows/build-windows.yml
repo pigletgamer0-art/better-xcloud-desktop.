@@ -25,14 +25,31 @@ jobs:
           go-version: '1.22.x'
           cache: false
 
-      - name: Extract source package
+      - name: Reconstruct source package
         shell: bash
         run: |
           set -euo pipefail
-          test -f source-package/repo-source-min.zip
-          echo 'cb526df0b52c22b395637ce1f1d686668835d484bfd64933db319221166f734b  source-package/repo-source-min.zip' | sha256sum -c -
+          python - <<'PY'
+          from pathlib import Path
+          import base64
+          import hashlib
+
+          parts = sorted(Path('source-package').glob('part-*.b64'))
+          if len(parts) != 8:
+              raise SystemExit(f'Expected 8 source package parts, found {len(parts)}')
+
+          encoded = ''.join(p.read_text(encoding='utf-8') for p in parts)
+          blob = base64.b64decode(encoded, validate=True)
+          expected = 'cb526df0b52c22b395637ce1f1d686668835d484bfd64933db319221166f734b'
+          actual = hashlib.sha256(blob).hexdigest()
+          if actual != expected:
+              raise SystemExit(f'Source package SHA-256 mismatch: {actual}')
+
+          Path('repo-source-min.zip').write_bytes(blob)
+          print(f'Source package verified: {actual}')
+          PY
           mkdir -p build
-          unzip -q source-package/repo-source-min.zip -d build
+          unzip -q repo-source-min.zip -d build
 
       - name: Download pinned Better xCloud 6.7.12
         shell: bash
