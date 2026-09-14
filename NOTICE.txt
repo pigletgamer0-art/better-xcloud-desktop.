@@ -8,5 +8,3 @@ La app puede comprobar y descargar automáticamente una versión posterior del u
 
 Electron se descarga desde los releases oficiales de electron/electron en GitHub.
 Electron se distribuye bajo licencia MIT; las dependencias de Chromium y componentes incluidos mantienen sus licencias correspondientes.
-
-Ultra Assistant Add-on 2.0.0 fue incluido desde el archivo proporcionado por el usuario para esta compilación.
