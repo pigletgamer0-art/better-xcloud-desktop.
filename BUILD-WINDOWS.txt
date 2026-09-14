@@ -1,0 +1,15 @@
+REQUISITOS PARA RECOMPILAR EL INSTALADOR 2.6
+=============================================
+- Go 1.22 o superior
+
+Antes de compilar, copia app/ dentro de installer/embedded/app/.
+
+Desde la carpeta installer:
+
+  set GOOS=windows
+  set GOARCH=amd64
+  set CGO_ENABLED=0
+  go build -trimpath -ldflags="-H=windowsgui -s -w" -o BetterXcloud-Desktop-Setup-v2.6.exe .
+
+El runtime de Electron NO se compila dentro del instalador: se descarga y verifica en la primera instalación.
+El mismo ejecutable se copia a la instalación como Uninstall.exe y usa el argumento --uninstall.
