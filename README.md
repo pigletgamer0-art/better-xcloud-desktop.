@@ -1,6 +1,6 @@
 # Better xCloud Desktop
 
-Aplicación independiente para **Windows 10/11 x64** que ejecuta Xbox Cloud Gaming con un runtime propio de Electron/Chromium e integra Better xCloud y Ultra Assistant.
+Aplicación independiente para **Windows 10/11 x64** que ejecuta Xbox Cloud Gaming con un runtime propio de Electron/Chromium e integra Better xCloud.
 
 > Proyecto no oficial. No está afiliado con Microsoft, Xbox ni con el autor original de Better xCloud.
 
@@ -12,7 +12,6 @@ Aplicación independiente para **Windows 10/11 x64** que ejecuta Xbox Cloud Gami
 
 - App independiente: no abre Microsoft Edge y no requiere Tampermonkey.
 - Better xCloud 6.7.12 como versión estable integrada.
-- Ultra Assistant Add-on 2.0.0.
 - Instalador y desinstalador para Windows.
 - Registro en **Configuración → Aplicaciones instaladas**.
 - Accesos directos en Menú Inicio.
@@ -21,7 +20,6 @@ Aplicación independiente para **Windows 10/11 x64** que ejecuta Xbox Cloud Gami
 
 ## Controles
 
-- `Alt + F9`: Ultra Assistant
 - `F11`: pantalla completa
 - `Ctrl + R`: recargar
 - `Alt + ← / →`: navegar atrás/adelante
@@ -64,7 +62,7 @@ SHA-256 esperado:
 ## Estructura
 
 - `app/`: aplicación Electron.
-- `app/scripts/`: Better xCloud y Ultra Assistant integrados.
+- `app/scripts/`: Better xCloud integrado.
 - `installer/`: instalador/desinstalador escrito en Go.
 - `.github/workflows/`: compilación automática del instalador para Windows.
 
