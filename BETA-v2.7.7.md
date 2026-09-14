@@ -1,17 +1,38 @@
-# Better xCloud Desktop v2.7.7 Beta — Controller Profiles
+# Better xCloud Desktop v2.7.7 Beta
 
-Status: staging for the future public release.
+> **The Version It Should Have Been — Beta Preview**
 
-This beta keeps the stability work from v2.7.6 and adds automatic controller profiles:
+This public beta focuses on stability, controller-aware profiles and quality-of-life improvements while keeping the streaming path lightweight.
 
-- Xbox controller → Xbox profile.
-- PlayStation / DualSense / DualShock → PlayStation profile and symbols.
-- Nintendo / Switch Pro / Joy-Con → Nintendo profile with ABXY/BAYX mapping support.
-- Preserves custom controller profiles instead of overwriting them.
-- Re-detects the controller when devices are connected or disconnected.
-- Alt+F9: Ultra Assistant.
-- Alt+F10: Stream Health.
-- Ctrl+Shift+M: MIC Sensitivity.
-- Native Look and beta stability optimizations remain enabled.
+## Highlights
 
-This branch is a staging branch. It is not the final public release yet.
+- Controller profile auto-detection for Xbox, PlayStation and Nintendo/Switch layouts.
+- PlayStation glyph mapping and Nintendo ABXY/BAYX handling through Better xCloud settings.
+- MIC Sensitivity support for games that use microphone input, including headset microphones.
+- Native Look quality tuning with adaptive behavior to avoid the heavy lag seen in earlier test builds.
+- Hidden Ultra Assistant, opened with **Alt + F9**.
+- Stream Health diagnostics, opened with **Alt + F10**.
+- MIC Sensitivity shortcut: **Ctrl + Shift + M**.
+- Stability work carried forward from the 2.7.4–2.7.6 betas: lighter polling, reduced background work, safer microphone handling and fewer unnecessary writes.
+
+## Status
+
+This is a **public beta**. The streaming path has been tested as smooth in the current test build, while Ultra Assistant and Stream Health are still under active validation.
+
+The stable `main` branch is not replaced by this beta yet.
+
+## Build files
+
+- `BetterXcloud-Desktop-Setup-v2.7.7-Beta-ControllerProfiles.exe`
+- `BetterXcloud-Desktop-v2.7.7-Beta-ControllerProfiles-Source.zip`
+
+### SHA-256
+
+```text
+5cd7db51a2a3d550b13ebd93058cc01e974d10649338d2f4d7b7dd39f35cc181  BetterXcloud-Desktop-Setup-v2.7.7-Beta-ControllerProfiles.exe
+4d2fbe666d84aae90790995285a08577a0b6d6ca64ee057b4214e9fd0eb8cd52  BetterXcloud-Desktop-v2.7.7-Beta-ControllerProfiles-Source.zip
+```
+
+## Notes
+
+Better xCloud Desktop is not affiliated with Microsoft, Xbox or the Better xCloud upstream project. The app does not bypass authentication or make cloud execution local.
