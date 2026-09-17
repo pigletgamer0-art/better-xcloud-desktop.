@@ -12,23 +12,31 @@ permissions:
 jobs:
   inspect:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - name: Download official APK
         run: |
           curl -L --fail -o app.apk 'https://github.com/redphx/better-xcloud-android/releases/download/a0.24.2/com.redphx.betterxc_0.24.2-39.apk'
           sha256sum app.apk
-      - name: Basic tree
+      - name: Install apktool
         run: |
-          unzip -l app.apk | sed -n '1,220p'
-      - name: Dex strings
+          curl -L --fail -o apktool.jar 'https://github.com/iBotPeaches/Apktool/releases/download/v2.10.0/apktool_2.10.0.jar'
+      - name: Decode APK
         run: |
-          unzip -q app.apk 'classes*.dex' -d dex
-          for f in dex/classes*.dex; do
-            echo "===== $f ====="
-            strings "$f" | grep -Ei 'userscript|custom.?script|javascript|evaluateJavascript|better.?xcloud|webview|gamepad|controller|localStorage|sharedpref|asset' | head -n 400 || true
-          done
-      - name: Manifest via apkanalyzer
+          java -jar apktool.jar d -f app.apk -o decoded >/dev/null
+          echo '=== assets/res/raw/lib ==='
+          find decoded/assets decoded/res/raw decoded/lib -maxdepth 3 -type f 2>/dev/null | sort | head -n 500 || true
+          echo '=== package smali dirs ==='
+          find decoded -type d -path '*redphx*' | head -n 100 || true
+      - name: Find script and WebView hooks
         run: |
-          ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager 'cmdline-tools;latest' >/dev/null || true
-          find "$ANDROID_HOME" -type f -name apkanalyzer -print -quit | xargs -r -I{} {} manifest print app.apk | head -n 500 || true
+          echo '=== interesting smali files ==='
+          grep -RIlE 'evaluateJavascript|loadUrl|addJavascriptInterface|WebViewClient|userscript|custom.?script|better.?xcloud' decoded/smali* 2>/dev/null | head -n 100 || true
+          echo '=== matching lines ==='
+          grep -RInE 'evaluateJavascript|addJavascriptInterface|userscript|custom.?script|better.?xcloud|javascript:' decoded/smali* 2>/dev/null | head -n 500 || true
+          echo '=== asset names ==='
+          find decoded/assets -type f -maxdepth 5 2>/dev/null -print | head -n 400 || true
+      - name: Manifest
+        run: |
+          sed -n '1,260p' decoded/AndroidManifest.xml
