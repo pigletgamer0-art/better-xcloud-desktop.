@@ -43,7 +43,10 @@ jobs:
         run: |
           set -euo pipefail
           curl -L --fail --retry 3 -o base.apk 'https://github.com/redphx/better-xcloud-android/releases/download/a0.24.2/com.redphx.betterxc_0.24.2-39.apk'
-          echo '1234ac881cc5804137169960f3e05bbc4b413103bafba789120e8c39e77ce8d  base.apk' | sha256sum -c -
+          EXPECTED='1234ac881cc5804137169960f3e05bbc4b413103bafba789120e8c39e77ce8d1'
+          ACTUAL="$(sha256sum base.apk | awk '{print $1}')"
+          echo "Base SHA-256: $ACTUAL"
+          test "$ACTUAL" = "$EXPECTED"
 
       - name: Download apktool
         shell: bash
@@ -65,7 +68,6 @@ jobs:
           set -euo pipefail
           cp mobile-enhanced/additional.user.js decoded/assets/userscripts/additional.user.js
           grep -q 'Mobile Enhanced v0.1' decoded/assets/userscripts/additional.user.js
-          # Give the patched build a visible version name while retaining the original package.
           sed -i 's/android:versionName="0.24.2"/android:versionName="0.24.2-ME0.1"/' decoded/AndroidManifest.xml || true
           if [ -f decoded/res/values/strings.xml ]; then
             sed -i 's#<string name="app_name">Better xCloud</string>#<string name="app_name">Better xCloud Enhanced</string>#' decoded/res/values/strings.xml || true
