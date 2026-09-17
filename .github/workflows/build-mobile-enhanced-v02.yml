@@ -5,7 +5,7 @@ on:
     branches: [mobile-enhanced-v0.2-injection-fix]
     paths:
       - '.github/workflows/build-mobile-enhanced-v02.yml'
-      - 'mobile-enhanced/**'
+      - 'mobile-enhanced/mobile-enhanced-v02.js'
   workflow_dispatch:
 
 permissions:
@@ -28,6 +28,15 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+
+      - name: Validate Mobile Enhanced overlay
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check mobile-enhanced/mobile-enhanced-v02.js
+          grep -q "const VERSION = '0.2.0'" mobile-enhanced/mobile-enhanced-v02.js
+          grep -q 'BX_MOBILE_ENHANCED' mobile-enhanced/mobile-enhanced-v02.js
+          grep -q 'waitForHost' mobile-enhanced/mobile-enhanced-v02.js
 
       - name: Install Android build tools
         shell: bash
@@ -55,72 +64,44 @@ jobs:
           curl -L --fail --retry 3 -o apktool.jar 'https://github.com/iBotPeaches/Apktool/releases/download/v2.11.1/apktool_2.11.1.jar'
           java -jar apktool.jar --version
 
-      - name: Decode APK and locate injected userscript
+      - name: Decode APK and locate userscripts
         shell: bash
         run: |
           set -euo pipefail
           java -jar apktool.jar d -f base.apk -o decoded
-          echo '--- assets/userscripts ---'
-          find decoded/assets/userscripts -maxdepth 1 -type f -printf '%s  %p\n' | sort -nr || true
           ADD='decoded/assets/userscripts/additional.user.js'
           test -f "$ADD"
+          grep -Fq '[[BX_FLAGS]]' "$ADD"
+          grep -Fq '[[REMAP_BACK_BUTTON]]' "$ADD"
 
-          # The v0.1 build assumed a hard-coded core filename. Instead, select the
-          # largest JS userscript other than additional.user.js; that is the bundled
-          # Better xCloud core userscript that the Android shell executes.
           CORE="$(find decoded/assets/userscripts -maxdepth 1 -type f -name '*.js' ! -name 'additional.user.js' -printf '%s %p\n' | sort -nr | head -n1 | cut -d' ' -f2-)"
           echo "Detected core userscript: $CORE"
           test -n "$CORE"
           test -f "$CORE"
           printf '%s' "$CORE" > core-path.txt
-          printf '%s' "$ADD" > additional-path.txt
           sha256sum "$ADD" | awk '{print $1}' > official-additional.sha
-          echo "Official additional.user.js SHA: $(cat official-additional.sha)"
+          sha256sum "$CORE" | awk '{print $1}' > official-core.sha
 
-      - name: Build standalone Mobile Enhanced overlay
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          from pathlib import Path
-          src = Path('mobile-enhanced/additional.user.js').read_text(encoding='utf-8')
-          marker = "(() => {\n    'use strict';"
-          start = src.find(marker)
-          if start < 0:
-              raise SystemExit('Could not locate Mobile Enhanced IIFE in v0.1 source')
-          overlay = src[start:]
-          overlay = overlay.replace("const VERSION = '0.1.0';", "const VERSION = '0.2.0';", 1)
-          overlay = overlay.replace(
-              "    'use strict';\n",
-              "    'use strict';\n\n"
-              "    // v0.2 injection guard + visible diagnostics.\n"
-              "    if (window.BX_MOBILE_ENHANCED && window.BX_MOBILE_ENHANCED.version) return;\n"
-              "    window.__BX_MOBILE_ENHANCED_INJECTED__ = '0.2.0';\n"
-              "    try { console.log('[BX Mobile Enhanced v0.2] injected from the core Better xCloud userscript'); } catch (_) {}\n",
-              1,
-          )
-          Path('mobile-enhanced/mobile-enhanced-overlay-v0.2.js').write_text(overlay, encoding='utf-8')
-          PY
-          node --check mobile-enhanced/mobile-enhanced-overlay-v0.2.js
-          grep -q "const VERSION = '0.2.0'" mobile-enhanced/mobile-enhanced-overlay-v0.2.js
-          grep -q '__BX_MOBILE_ENHANCED_INJECTED__' mobile-enhanced/mobile-enhanced-overlay-v0.2.js
-
-      - name: Inject into the Better xCloud core userscript
+      - name: Inject guarded overlay into Better xCloud core
         shell: bash
         run: |
           set -euo pipefail
           TARGET="$(cat core-path.txt)"
-          ADD="$(cat additional-path.txt)"
+          ADD='decoded/assets/userscripts/additional.user.js'
           {
             printf '\n;\n/* === Better xCloud Mobile Enhanced v0.2 injection fix === */\n'
-            cat mobile-enhanced/mobile-enhanced-overlay-v0.2.js
+            cat mobile-enhanced/mobile-enhanced-v02.js
             printf '\n/* === end Mobile Enhanced v0.2 === */\n'
           } >> "$TARGET"
-          grep -q 'Better xCloud Mobile Enhanced v0.2 injection fix' "$TARGET"
-          grep -q '__BX_MOBILE_ENHANCED_INJECTED__' "$TARGET"
 
-          # Keep the official Android integration asset untouched.
+          grep -q 'Better xCloud Mobile Enhanced v0.2 injection fix' "$TARGET"
+          grep -q 'BX_MOBILE_ENHANCED' "$TARGET"
+          grep -q 'waitForHost' "$TARGET"
+
+          # The official Android bootstrap must stay untouched.
           test "$(sha256sum "$ADD" | awk '{print $1}')" = "$(cat official-additional.sha)"
+          grep -Fq '[[BX_FLAGS]]' "$ADD"
+          grep -Fq '[[REMAP_BACK_BUTTON]]' "$ADD"
 
           sed -i 's/android:versionName="0.24.2"/android:versionName="0.24.2-ME0.2"/' decoded/AndroidManifest.xml || true
           if [ -f decoded/res/values/strings.xml ]; then
@@ -163,27 +144,29 @@ jobs:
           "$BUILD_TOOLS/apksigner" verify --verbose --print-certs Better-xCloud-Mobile-Enhanced-v0.2-InjectionFix.apk | tee signature-verification.txt
           "$BUILD_TOOLS/zipalign" -c -v 4 Better-xCloud-Mobile-Enhanced-v0.2-InjectionFix.apk | tail -n 8
 
-      - name: Verify final APK contains executable injection path
+      - name: Verify final APK injection and official bootstrap
         shell: bash
         run: |
           set -euo pipefail
           java -jar apktool.jar d -f Better-xCloud-Mobile-Enhanced-v0.2-InjectionFix.apk -o verify-decoded >/dev/null
           MAIN="$(find verify-decoded/assets/userscripts -maxdepth 1 -type f -name '*.js' ! -name 'additional.user.js' -printf '%s %p\n' | sort -nr | head -n1 | cut -d' ' -f2-)"
           ADD='verify-decoded/assets/userscripts/additional.user.js'
-          echo "Verifying injected core: $MAIN"
           test -f "$MAIN"
           grep -q 'Better xCloud Mobile Enhanced v0.2 injection fix' "$MAIN"
-          grep -q '__BX_MOBILE_ENHANCED_INJECTED__' "$MAIN"
+          grep -q 'BX_MOBILE_ENHANCED' "$MAIN"
           grep -q "const VERSION = '0.2.0'" "$MAIN"
+          grep -q 'waitForHost' "$MAIN"
           test "$(sha256sum "$ADD" | awk '{print $1}')" = "$(cat official-additional.sha)"
+          grep -Fq '[[BX_FLAGS]]' "$ADD"
+          grep -Fq '[[REMAP_BACK_BUTTON]]' "$ADD"
+
           sha256sum Better-xCloud-Mobile-Enhanced-v0.2-InjectionFix.apk > Better-xCloud-Mobile-Enhanced-v0.2-InjectionFix.sha256.txt
           {
             echo 'Better xCloud Mobile Enhanced v0.2 - Injection Fix'
             echo 'Base: official Better xCloud Android 0.24.2-39'
             echo "Core userscript patched: $(cat core-path.txt)"
-            echo 'Fix: enhancement overlay is appended directly to the core Better xCloud userscript loaded by the Android shell.'
-            echo 'Official additional.user.js is preserved byte-for-byte.'
-            echo 'Visible proof: BX+ button; JS marker window.__BX_MOBILE_ENHANCED_INJECTED__ = 0.2.0.'
+            echo 'Official Android additional.user.js bootstrap preserved byte-for-byte.'
+            echo 'Overlay waits for BX_EXPOSED and provides a last-resort visible BX+ diagnostic button.'
             echo 'Features: Native Look, Controller Console, Stream Health, touch menu, Alt+F11.'
             echo 'Community-signed test build; signature differs from official APK.'
           } > Better-xCloud-Mobile-Enhanced-v0.2-InjectionFix-BUILD.txt
@@ -198,6 +181,6 @@ jobs:
             Better-xCloud-Mobile-Enhanced-v0.2-InjectionFix.sha256.txt
             Better-xCloud-Mobile-Enhanced-v0.2-InjectionFix-BUILD.txt
             signature-verification.txt
-            mobile-enhanced/mobile-enhanced-overlay-v0.2.js
+            mobile-enhanced/mobile-enhanced-v02.js
           if-no-files-found: error
           compression-level: 0
