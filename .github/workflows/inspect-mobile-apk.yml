@@ -60,7 +60,7 @@ jobs:
             find decoded/assets decoded/res/raw -type f 2>/dev/null | sort || true
             echo
             echo '=== SCRIPT / USERSCRIPT / WEBVIEW REFERENCES ==='
-            grep -RniE 'userscript|better.?xcloud|webview|javascript:|evaluateJavascript|scriptUrl|script_url|custom script|custom userscript' decoded 2>/dev/null | head -n 1200 || true
+            grep -RniE 'userscript|better.?xcloud|webview|javascript:|evaluateJavascript|scriptUrl|script_url|custom script|custom userscript|greasy|tamper|script variant' decoded 2>/dev/null | head -n 1600 || true
             echo
             echo '=== JS/CSS/HTML FILES ==='
             find decoded -type f \( -iname '*.js' -o -iname '*.css' -o -iname '*.html' \) -print | sort || true
@@ -69,6 +69,10 @@ jobs:
             sed -n '1,260p' decoded/AndroidManifest.xml || true
           } > inspection.txt
           wc -l inspection.txt
+
+      - name: Print inspection report
+        shell: bash
+        run: cat inspection.txt
 
       - name: Upload inspection
         uses: actions/upload-artifact@v4
