@@ -32,32 +32,25 @@ jobs:
           curl -L --fail --retry 3 -o apktool.jar 'https://github.com/iBotPeaches/Apktool/releases/download/v2.11.1/apktool_2.11.1.jar'
           java -jar apktool.jar d -f base.apk -o decoded
 
-      - name: Focused inspection
+      - name: Locate scripts and loader
         shell: bash
         run: |
-          set -euo pipefail
+          set -u
           {
-            echo '=== BUNDLED SCRIPT TYPE/SIZE ==='
-            file decoded/assets/bundled.script
-            wc -c -l decoded/assets/bundled.script
-            sha256sum decoded/assets/bundled.script
+            echo '=== ASSETS / UNKNOWN / RAW ==='
+            find decoded/assets decoded/unknown decoded/res/raw -type f 2>/dev/null | sort || true
             echo
-            echo '=== BUNDLED SCRIPT HEAD ==='
-            head -c 12000 decoded/assets/bundled.script || true
+            echo '=== FILES NAMED SCRIPT/JS/USER ==='
+            find decoded -type f \( -iname '*script*' -o -iname '*.js' -o -iname '*user*' -o -iname '*bundle*' \) -print 2>/dev/null | sort | head -n 1000 || true
             echo
+            echo '=== FILES WITH BETTER XCLOUD MARKERS ==='
+            grep -RIlEa 'Better Xcloud|Better xCloud|BetterXcloud|better-xcloud.user.js|redphx' decoded/assets decoded/unknown decoded/res 2>/dev/null | head -n 500 || true
             echo
-            echo '=== BUNDLED SCRIPT TAIL ==='
-            tail -c 12000 decoded/assets/bundled.script || true
+            echo '=== SMALI ASSET/WEBVIEW REFERENCES ==='
+            grep -RniE 'bundled|script|getAssets|AssetManager|evaluateJavascript|evaluate_javascript|javascript:|loadUrl|load_url|addJavascriptInterface|WebView|webview|better-xcloud.user.js|githubusercontent' decoded/smali*/com/redphx/better_xcloud 2>/dev/null | head -n 2000 || true
             echo
-            echo
-            echo '=== BUNDLED SCRIPT INTERESTING TOKENS ==='
-            grep -aoniE 'BetterXcloud.Stream|controller.settings|video.processing|stream.video.resolution|stream.video.maxBitrate|customizationPresetId|ControllerCustomizations|StreamSettings|STORAGE|localStorage|gamepadconnected|navigator.getGamepads' decoded/assets/bundled.script | head -n 500 || true
-            echo
-            echo '=== ASSET LOADER REFERENCES ==='
-            grep -RniE 'bundled\.script|getAssets|AssetManager|evaluateJavascript|evaluate_javascript|javascript:|loadUrl|load_url|addJavascriptInterface|WebView|webview' decoded/smali*/com/redphx/better_xcloud 2>/dev/null | head -n 1200 || true
-            echo
-            echo '=== MAIN ACTIVITY METHODS ==='
-            grep -nE '^\.method|bundled\.script|WebView|evaluate|script|asset' decoded/smali*/com/redphx/better_xcloud/MainActivity*.smali 2>/dev/null | head -n 1000 || true
+            echo '=== APP SMALI FILES ==='
+            find decoded/smali* -path '*/com/redphx/better_xcloud/*' -type f -print 2>/dev/null | sort || true
           } | tee focused-inspection.txt
 
       - name: Upload focused inspection
