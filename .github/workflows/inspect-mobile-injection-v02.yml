@@ -28,16 +28,28 @@ jobs:
           curl -L --fail --retry 3 -o base.apk 'https://github.com/redphx/better-xcloud-android/releases/download/a0.24.2/com.redphx.betterxc_0.24.2-39.apk'
           curl -L --fail --retry 3 -o apktool.jar 'https://github.com/iBotPeaches/Apktool/releases/download/v2.11.1/apktool_2.11.1.jar'
           java -jar apktool.jar d -f base.apk -o decoded >/dev/null
-      - name: Show userscript injection references
+      - name: Show exact injection path
         shell: bash
         run: |
           set +e
-          echo '===== ASSET ====='
-          nl -ba decoded/assets/userscripts/additional.user.js | head -n 160
-          echo '===== REFERENCES: additional.user.js / userscripts ====='
-          grep -RIn -C 12 -E 'additional\.user\.js|userscripts|additional\.user|user\.js' decoded/smali decoded/smali_classes2 2>/dev/null | head -n 800
-          echo '===== WEBVIEW JAVASCRIPT EXECUTION ====='
-          grep -RIn -C 15 -E 'evaluateJavascript|loadUrl\(|javascript:|WebViewClient|onPageFinished|shouldInterceptRequest|addJavascriptInterface' decoded/smali decoded/smali_classes2 2>/dev/null | head -n 1200
-          echo '===== ASSET OPEN / READ ====='
-          grep -RIn -C 10 -E 'AssetManager;->open|openFd|assets/userscripts|Landroid/content/res/AssetManager' decoded/smali decoded/smali_classes2 2>/dev/null | head -n 1000
+          MAIN='decoded/smali/com/redphx/betterxcloud/MainActivity.smali'
+          WEB='decoded/smali/com/redphx/betterxcloud/WebViewActivity.smali'
+          echo '===== OFFICIAL ADDITIONAL ASSET ====='
+          nl -ba decoded/assets/userscripts/additional.user.js
+          echo '===== MAINACTIVITY 80-220 ====='
+          nl -ba "$MAIN" | sed -n '80,220p'
+          echo '===== MAINACTIVITY setAdditionalPostloadJS refs ====='
+          grep -n -C 35 -E 'setAdditionalPostloadJS|additionalPostloadJS|additional\.user\.js|userscripts|AssetManager;->open|getAssets' "$MAIN"
+          echo '===== WEBVIEWACTIVITY 500-760 ====='
+          nl -ba "$WEB" | sed -n '500,760p'
+          echo '===== WEBVIEWACTIVITY POSTLOAD 2120-2380 ====='
+          nl -ba "$WEB" | sed -n '2120,2380p'
+          echo '===== WEBVIEWACTIVITY FIELD/ACCESSOR REFS ====='
+          grep -n -C 30 -E 'additionalPostloadJS|setAdditionalPostloadJS|getAdditionalPostloadJS|postload\(' "$WEB"
+          echo '===== ALL setAdditionalPostloadJS refs ====='
+          grep -RIn -C 30 'setAdditionalPostloadJS' decoded/smali decoded/smali_classes2 2>/dev/null
+          echo '===== ALL additionalPostloadJS refs ====='
+          grep -RIn -C 25 'additionalPostloadJS' decoded/smali decoded/smali_classes2 2>/dev/null
+          echo '===== ALL ASSET OPEN / USERSCRIPTS refs ====='
+          grep -RIn -C 20 -E 'additional\.user\.js|userscripts|AssetManager;->open|getAssets\(\)' decoded/smali decoded/smali_classes2 2>/dev/null | head -n 1600
           exit 0
