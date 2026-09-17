@@ -1,0 +1,137 @@
+name: Build Better xCloud Mobile Enhanced v0.1
+
+on:
+  push:
+    branches: [mobile-enhanced-v0.1]
+    paths:
+      - '.github/workflows/build-mobile-enhanced-v01.yml'
+      - 'mobile-enhanced/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Android build tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" 'build-tools;35.0.0' 'platform-tools'
+
+      - name: Download official Better xCloud Android 0.24.2
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -L --fail --retry 3 -o base.apk 'https://github.com/redphx/better-xcloud-android/releases/download/a0.24.2/com.redphx.betterxc_0.24.2-39.apk'
+          echo '1234ac881cc5804137169960f3e05bbc4b413103bafba789120e8c39e77ce8d  base.apk' | sha256sum -c -
+
+      - name: Download apktool
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -L --fail --retry 3 -o apktool.jar 'https://github.com/iBotPeaches/Apktool/releases/download/v2.11.1/apktool_2.11.1.jar'
+          java -jar apktool.jar --version
+
+      - name: Decode APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          java -jar apktool.jar d -f base.apk -o decoded
+          test -f decoded/assets/userscripts/additional.user.js
+
+      - name: Apply Mobile Enhanced overlay
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp mobile-enhanced/additional.user.js decoded/assets/userscripts/additional.user.js
+          grep -q 'Mobile Enhanced v0.1' decoded/assets/userscripts/additional.user.js
+          # Give the patched build a visible version name while retaining the original package.
+          sed -i 's/android:versionName="0.24.2"/android:versionName="0.24.2-ME0.1"/' decoded/AndroidManifest.xml || true
+          if [ -f decoded/res/values/strings.xml ]; then
+            sed -i 's#<string name="app_name">Better xCloud</string>#<string name="app_name">Better xCloud Enhanced</string>#' decoded/res/values/strings.xml || true
+          fi
+
+      - name: Rebuild APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          java -jar apktool.jar b decoded -o unsigned.apk
+          test -s unsigned.apk
+          file unsigned.apk
+
+      - name: Generate signing key
+        shell: bash
+        run: |
+          set -euo pipefail
+          keytool -genkeypair -v \
+            -keystore mobile-enhanced.jks \
+            -storepass android \
+            -alias mobileenhanced \
+            -keypass android \
+            -dname 'CN=Better xCloud Mobile Enhanced, O=Community Build, C=CL' \
+            -keyalg RSA -keysize 2048 -validity 10000
+
+      - name: Align and sign APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          BUILD_TOOLS="$ANDROID_SDK_ROOT/build-tools/35.0.0"
+          "$BUILD_TOOLS/zipalign" -f -p 4 unsigned.apk aligned.apk
+          "$BUILD_TOOLS/apksigner" sign \
+            --ks mobile-enhanced.jks \
+            --ks-key-alias mobileenhanced \
+            --ks-pass pass:android \
+            --key-pass pass:android \
+            --out Better-xCloud-Mobile-Enhanced-v0.1.apk \
+            aligned.apk
+          "$BUILD_TOOLS/apksigner" verify --verbose --print-certs Better-xCloud-Mobile-Enhanced-v0.1.apk | tee signature-verification.txt
+          "$BUILD_TOOLS/zipalign" -c -v 4 Better-xCloud-Mobile-Enhanced-v0.1.apk | tail -n 8
+
+      - name: Verify patch and generate checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          java -jar apktool.jar d -f Better-xCloud-Mobile-Enhanced-v0.1.apk -o verify-decoded >/dev/null
+          grep -q 'BX_MOBILE_ENHANCED' verify-decoded/assets/userscripts/additional.user.js
+          grep -q "const VERSION = '0.1.0'" verify-decoded/assets/userscripts/additional.user.js
+          sha256sum Better-xCloud-Mobile-Enhanced-v0.1.apk > Better-xCloud-Mobile-Enhanced-v0.1.sha256.txt
+          {
+            echo 'Better xCloud Mobile Enhanced v0.1'
+            echo 'Base: Better xCloud Android 0.24.2-39'
+            echo 'Features: Native Look, Controller Console, Stream Health, touch menu, Alt+F11 menu shortcut.'
+            echo 'Note: community-signed test build; signature differs from the official APK.'
+          } > Better-xCloud-Mobile-Enhanced-v0.1-BUILD.txt
+          cat Better-xCloud-Mobile-Enhanced-v0.1.sha256.txt
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Better-xCloud-Mobile-Enhanced-v0.1
+          path: |
+            Better-xCloud-Mobile-Enhanced-v0.1.apk
+            Better-xCloud-Mobile-Enhanced-v0.1.sha256.txt
+            Better-xCloud-Mobile-Enhanced-v0.1-BUILD.txt
+            signature-verification.txt
+            mobile-enhanced/additional.user.js
+          if-no-files-found: error
+          compression-level: 0
