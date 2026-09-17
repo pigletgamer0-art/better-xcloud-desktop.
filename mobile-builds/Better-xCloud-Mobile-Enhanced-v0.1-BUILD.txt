@@ -1,0 +1,4 @@
+Better xCloud Mobile Enhanced v0.1
+Base: Better xCloud Android 0.24.2-39
+Features: Native Look, Controller Console, Stream Health, touch menu, Alt+F11 menu shortcut.
+Note: community-signed test build; signature differs from the official APK.
