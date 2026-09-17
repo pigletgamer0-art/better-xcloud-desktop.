@@ -43,7 +43,7 @@ jobs:
         run: |
           set -euo pipefail
           curl -L --fail --retry 3 -o base.apk 'https://github.com/redphx/better-xcloud-android/releases/download/a0.24.2/com.redphx.betterxc_0.24.2-39.apk'
-          EXPECTED='1234ac881cc5804137169960f3e05bbc4b413103bafba789120e8c39e77ce8d1'
+          EXPECTED='758d957f4709253956f39b214a59866045081a8c79574133d76628d972a459d3'
           ACTUAL="$(sha256sum base.apk | awk '{print $1}')"
           echo "Base SHA-256: $ACTUAL"
           test "$ACTUAL" = "$EXPECTED"
