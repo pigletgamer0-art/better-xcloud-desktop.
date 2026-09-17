@@ -1,0 +1,43 @@
+name: Inspect Better xCloud Android Injection Path v0.2
+
+on:
+  push:
+    branches: [mobile-enhanced-v0.2-injection-fix]
+    paths:
+      - '.github/workflows/inspect-mobile-injection-v02.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Download and decode official APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -L --fail --retry 3 -o base.apk 'https://github.com/redphx/better-xcloud-android/releases/download/a0.24.2/com.redphx.betterxc_0.24.2-39.apk'
+          curl -L --fail --retry 3 -o apktool.jar 'https://github.com/iBotPeaches/Apktool/releases/download/v2.11.1/apktool_2.11.1.jar'
+          java -jar apktool.jar d -f base.apk -o decoded >/dev/null
+      - name: Show userscript injection references
+        shell: bash
+        run: |
+          set +e
+          echo '===== ASSET ====='
+          nl -ba decoded/assets/userscripts/additional.user.js | head -n 160
+          echo '===== REFERENCES: additional.user.js / userscripts ====='
+          grep -RIn -C 12 -E 'additional\.user\.js|userscripts|additional\.user|user\.js' decoded/smali decoded/smali_classes2 2>/dev/null | head -n 800
+          echo '===== WEBVIEW JAVASCRIPT EXECUTION ====='
+          grep -RIn -C 15 -E 'evaluateJavascript|loadUrl\(|javascript:|WebViewClient|onPageFinished|shouldInterceptRequest|addJavascriptInterface' decoded/smali decoded/smali_classes2 2>/dev/null | head -n 1200
+          echo '===== ASSET OPEN / READ ====='
+          grep -RIn -C 10 -E 'AssetManager;->open|openFd|assets/userscripts|Landroid/content/res/AssetManager' decoded/smali decoded/smali_classes2 2>/dev/null | head -n 1000
+          exit 0
