@@ -24,61 +24,45 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Download official Better xCloud Android 0.24.2
+      - name: Download and decode official APK
         shell: bash
         run: |
           set -euo pipefail
           curl -L --fail --retry 3 -o base.apk 'https://github.com/redphx/better-xcloud-android/releases/download/a0.24.2/com.redphx.betterxc_0.24.2-39.apk'
-          sha256sum base.apk | tee base.sha256
-          file base.apk
-
-      - name: Install apktool
-        shell: bash
-        run: |
-          set -euo pipefail
           curl -L --fail --retry 3 -o apktool.jar 'https://github.com/iBotPeaches/Apktool/releases/download/v2.11.1/apktool_2.11.1.jar'
-          java -jar apktool.jar --version
-
-      - name: Decode APK
-        shell: bash
-        run: |
-          set -euo pipefail
           java -jar apktool.jar d -f base.apk -o decoded
 
-      - name: Build inspection report
+      - name: Focused inspection
         shell: bash
         run: |
           set -euo pipefail
           {
-            echo '=== BASE APK ==='
-            cat base.sha256
+            echo '=== BUNDLED SCRIPT TYPE/SIZE ==='
+            file decoded/assets/bundled.script
+            wc -c -l decoded/assets/bundled.script
+            sha256sum decoded/assets/bundled.script
             echo
-            echo '=== TOP LEVEL ==='
-            find decoded -maxdepth 2 -type f | sort | head -n 300
+            echo '=== BUNDLED SCRIPT HEAD ==='
+            head -c 12000 decoded/assets/bundled.script || true
             echo
-            echo '=== ASSETS / RAW ==='
-            find decoded/assets decoded/res/raw -type f 2>/dev/null | sort || true
             echo
-            echo '=== SCRIPT / USERSCRIPT / WEBVIEW REFERENCES ==='
-            grep -RniE 'userscript|better.?xcloud|webview|javascript:|evaluateJavascript|scriptUrl|script_url|custom script|custom userscript|greasy|tamper|script variant' decoded 2>/dev/null | head -n 1600 || true
+            echo '=== BUNDLED SCRIPT TAIL ==='
+            tail -c 12000 decoded/assets/bundled.script || true
             echo
-            echo '=== JS/CSS/HTML FILES ==='
-            find decoded -type f \( -iname '*.js' -o -iname '*.css' -o -iname '*.html' \) -print | sort || true
             echo
-            echo '=== MANIFEST ==='
-            sed -n '1,260p' decoded/AndroidManifest.xml || true
-          } > inspection.txt
-          wc -l inspection.txt
+            echo '=== BUNDLED SCRIPT INTERESTING TOKENS ==='
+            grep -aoniE 'BetterXcloud.Stream|controller.settings|video.processing|stream.video.resolution|stream.video.maxBitrate|customizationPresetId|ControllerCustomizations|StreamSettings|STORAGE|localStorage|gamepadconnected|navigator.getGamepads' decoded/assets/bundled.script | head -n 500 || true
+            echo
+            echo '=== ASSET LOADER REFERENCES ==='
+            grep -RniE 'bundled\.script|getAssets|AssetManager|evaluateJavascript|evaluate_javascript|javascript:|loadUrl|load_url|addJavascriptInterface|WebView|webview' decoded/smali*/com/redphx/better_xcloud 2>/dev/null | head -n 1200 || true
+            echo
+            echo '=== MAIN ACTIVITY METHODS ==='
+            grep -nE '^\.method|bundled\.script|WebView|evaluate|script|asset' decoded/smali*/com/redphx/better_xcloud/MainActivity*.smali 2>/dev/null | head -n 1000 || true
+          } | tee focused-inspection.txt
 
-      - name: Print inspection report
-        shell: bash
-        run: cat inspection.txt
-
-      - name: Upload inspection
+      - name: Upload focused inspection
         uses: actions/upload-artifact@v4
         with:
-          name: better-xcloud-mobile-inspection
-          path: |
-            inspection.txt
-            base.sha256
+          name: better-xcloud-mobile-focused-inspection
+          path: focused-inspection.txt
           if-no-files-found: error
