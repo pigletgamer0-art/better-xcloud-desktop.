@@ -1,0 +1,55 @@
+name: Stage Better xCloud Mobile Enhanced v0.1 APK
+
+on:
+  push:
+    branches: [mobile-enhanced-v0.1]
+    paths:
+      - '.github/workflows/stage-mobile-enhanced-v01.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  stage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: mobile-enhanced-v0.1
+
+      - name: Download verified build artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf staged-download
+          mkdir -p staged-download
+          gh run download 35226333417 \
+            --repo 'pigletgamer0-art/better-xcloud-desktop.' \
+            --name 'Better-xCloud-Mobile-Enhanced-v0.1' \
+            --dir staged-download
+          test -s staged-download/Better-xCloud-Mobile-Enhanced-v0.1.apk
+          cat staged-download/Better-xCloud-Mobile-Enhanced-v0.1.sha256.txt
+
+      - name: Stage APK on build branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p mobile-builds
+          cp staged-download/Better-xCloud-Mobile-Enhanced-v0.1.apk mobile-builds/
+          cp staged-download/Better-xCloud-Mobile-Enhanced-v0.1.sha256.txt mobile-builds/
+          cp staged-download/Better-xCloud-Mobile-Enhanced-v0.1-BUILD.txt mobile-builds/
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add mobile-builds/
+          if git diff --cached --quiet; then
+            echo 'Build already staged.'
+          else
+            git commit -m 'Stage Better xCloud Mobile Enhanced v0.1 APK'
+            git push origin HEAD:mobile-enhanced-v0.1
+          fi
