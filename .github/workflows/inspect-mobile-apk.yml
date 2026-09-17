@@ -32,30 +32,37 @@ jobs:
           curl -L --fail --retry 3 -o apktool.jar 'https://github.com/iBotPeaches/Apktool/releases/download/v2.11.1/apktool_2.11.1.jar'
           java -jar apktool.jar d -f base.apk -o decoded
 
-      - name: Locate scripts and loader
+      - name: Inspect userscript injection
         shell: bash
         run: |
           set -u
           {
-            echo '=== ASSETS / UNKNOWN / RAW ==='
-            find decoded/assets decoded/unknown decoded/res/raw -type f 2>/dev/null | sort || true
+            echo '=== ADDITIONAL USER SCRIPT ==='
+            file decoded/assets/userscripts/additional.user.js || true
+            wc -c -l decoded/assets/userscripts/additional.user.js || true
+            sed -n '1,360p' decoded/assets/userscripts/additional.user.js || true
             echo
-            echo '=== FILES NAMED SCRIPT/JS/USER ==='
-            find decoded -type f \( -iname '*script*' -o -iname '*.js' -o -iname '*user*' -o -iname '*bundle*' \) -print 2>/dev/null | sort | head -n 1000 || true
+            echo '=== USERSCRIPT UTIL ==='
+            for f in decoded/smali*/com/redphx/betterxc/util/UserscriptUtil*.smali; do
+              [ -f "$f" ] || continue
+              echo "--- $f ---"
+              grep -nE '^\.method|additional\.user\.js|userscripts|assets|AssetManager|evaluateJavascript|script|Better' "$f" | head -n 1200 || true
+            done
             echo
-            echo '=== FILES WITH BETTER XCLOUD MARKERS ==='
-            grep -RIlEa 'Better Xcloud|Better xCloud|BetterXcloud|better-xcloud.user.js|redphx' decoded/assets decoded/unknown decoded/res 2>/dev/null | head -n 500 || true
+            echo '=== UPDATE SCRIPT TASK ==='
+            for f in decoded/smali*/com/redphx/betterxc/task/UpdateScriptTask*.smali; do
+              [ -f "$f" ] || continue
+              echo "--- $f ---"
+              grep -nE '^\.method|github|raw|userscript|script|assets|better-xcloud' "$f" | head -n 1200 || true
+            done
             echo
-            echo '=== SMALI ASSET/WEBVIEW REFERENCES ==='
-            grep -RniE 'bundled|script|getAssets|AssetManager|evaluateJavascript|evaluate_javascript|javascript:|loadUrl|load_url|addJavascriptInterface|WebView|webview|better-xcloud.user.js|githubusercontent' decoded/smali*/com/redphx/better_xcloud 2>/dev/null | head -n 2000 || true
-            echo
-            echo '=== APP SMALI FILES ==='
-            find decoded/smali* -path '*/com/redphx/better_xcloud/*' -type f -print 2>/dev/null | sort || true
-          } | tee focused-inspection.txt
+            echo '=== MAIN ACTIVITY / WEBVIEW REFERENCES ==='
+            grep -RniE 'additional\.user\.js|userscripts|evaluateJavascript|evaluate_javascript|javascript:|loadUrl|load_url|WebView|webview|UserscriptUtil|script' decoded/smali*/com/redphx/betterxc 2>/dev/null | head -n 2500 || true
+          } | tee injection-inspection.txt
 
-      - name: Upload focused inspection
+      - name: Upload inspection
         uses: actions/upload-artifact@v4
         with:
-          name: better-xcloud-mobile-focused-inspection
-          path: focused-inspection.txt
+          name: better-xcloud-mobile-injection-inspection
+          path: injection-inspection.txt
           if-no-files-found: error
