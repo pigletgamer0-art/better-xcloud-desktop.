@@ -64,7 +64,7 @@ jobs:
           curl -L --fail --retry 3 -o apktool.jar 'https://github.com/iBotPeaches/Apktool/releases/download/v2.11.1/apktool_2.11.1.jar'
           java -jar apktool.jar --version
 
-      - name: Decode APK and locate userscripts
+      - name: Decode APK and preserve official Android bootstrap
         shell: bash
         run: |
           set -euo pipefail
@@ -73,35 +73,35 @@ jobs:
           test -f "$ADD"
           grep -Fq '[[BX_FLAGS]]' "$ADD"
           grep -Fq '[[REMAP_BACK_BUTTON]]' "$ADD"
+          grep -q 'BackButtonRemap.setup' "$ADD"
+          cp "$ADD" official-additional.user.js
+          sha256sum official-additional.user.js | awk '{print $1}' > official-additional.sha
+          echo "Official bootstrap SHA-256: $(cat official-additional.sha)"
 
-          CORE="$(find decoded/assets/userscripts -maxdepth 1 -type f -name '*.js' ! -name 'additional.user.js' -printf '%s %p\n' | sort -nr | head -n1 | cut -d' ' -f2-)"
-          echo "Detected core userscript: $CORE"
-          test -n "$CORE"
-          test -f "$CORE"
-          printf '%s' "$CORE" > core-path.txt
-          sha256sum "$ADD" | awk '{print $1}' > official-additional.sha
-          sha256sum "$CORE" | awk '{print $1}' > official-core.sha
-
-      - name: Inject guarded overlay into Better xCloud core
+      - name: Append guarded Mobile Enhanced overlay after official bootstrap
         shell: bash
         run: |
           set -euo pipefail
-          TARGET="$(cat core-path.txt)"
           ADD='decoded/assets/userscripts/additional.user.js'
+          OFFICIAL_BYTES="$(wc -c < official-additional.user.js)"
           {
-            printf '\n;\n/* === Better xCloud Mobile Enhanced v0.2 injection fix === */\n'
+            cat official-additional.user.js
+            printf '\n\n/* === Better xCloud Mobile Enhanced v0.2 injection fix === */\n'
             cat mobile-enhanced/mobile-enhanced-v02.js
             printf '\n/* === end Mobile Enhanced v0.2 === */\n'
-          } >> "$TARGET"
+          } > "$ADD"
 
-          grep -q 'Better xCloud Mobile Enhanced v0.2 injection fix' "$TARGET"
-          grep -q 'BX_MOBILE_ENHANCED' "$TARGET"
-          grep -q 'waitForHost' "$TARGET"
-
-          # The official Android bootstrap must stay untouched.
-          test "$(sha256sum "$ADD" | awk '{print $1}')" = "$(cat official-additional.sha)"
+          # Keep the exact official file as the prefix so the Android template engine
+          # can still replace BX_FLAGS and REMAP_BACK_BUTTON before executing our code.
+          head -c "$OFFICIAL_BYTES" "$ADD" > prefix.bin
+          cmp -s official-additional.user.js prefix.bin
           grep -Fq '[[BX_FLAGS]]' "$ADD"
           grep -Fq '[[REMAP_BACK_BUTTON]]' "$ADD"
+          grep -q 'BackButtonRemap.setup' "$ADD"
+          grep -q 'Better xCloud Mobile Enhanced v0.2 injection fix' "$ADD"
+          grep -q 'BX_MOBILE_ENHANCED' "$ADD"
+          grep -q 'waitForHost' "$ADD"
+          echo "Official Android bootstrap preserved as ${OFFICIAL_BYTES}-byte prefix"
 
           sed -i 's/android:versionName="0.24.2"/android:versionName="0.24.2-ME0.2"/' decoded/AndroidManifest.xml || true
           if [ -f decoded/res/values/strings.xml ]; then
@@ -144,29 +144,32 @@ jobs:
           "$BUILD_TOOLS/apksigner" verify --verbose --print-certs Better-xCloud-Mobile-Enhanced-v0.2-InjectionFix.apk | tee signature-verification.txt
           "$BUILD_TOOLS/zipalign" -c -v 4 Better-xCloud-Mobile-Enhanced-v0.2-InjectionFix.apk | tail -n 8
 
-      - name: Verify final APK injection and official bootstrap
+      - name: Verify final APK contains both official bootstrap and overlay
         shell: bash
         run: |
           set -euo pipefail
           java -jar apktool.jar d -f Better-xCloud-Mobile-Enhanced-v0.2-InjectionFix.apk -o verify-decoded >/dev/null
-          MAIN="$(find verify-decoded/assets/userscripts -maxdepth 1 -type f -name '*.js' ! -name 'additional.user.js' -printf '%s %p\n' | sort -nr | head -n1 | cut -d' ' -f2-)"
-          ADD='verify-decoded/assets/userscripts/additional.user.js'
-          test -f "$MAIN"
-          grep -q 'Better xCloud Mobile Enhanced v0.2 injection fix' "$MAIN"
-          grep -q 'BX_MOBILE_ENHANCED' "$MAIN"
-          grep -q "const VERSION = '0.2.0'" "$MAIN"
-          grep -q 'waitForHost' "$MAIN"
-          test "$(sha256sum "$ADD" | awk '{print $1}')" = "$(cat official-additional.sha)"
-          grep -Fq '[[BX_FLAGS]]' "$ADD"
-          grep -Fq '[[REMAP_BACK_BUTTON]]' "$ADD"
+          FINAL='verify-decoded/assets/userscripts/additional.user.js'
+          test -f "$FINAL"
+          grep -Fq '[[BX_FLAGS]]' "$FINAL"
+          grep -Fq '[[REMAP_BACK_BUTTON]]' "$FINAL"
+          grep -q 'BackButtonRemap.setup' "$FINAL"
+          grep -q 'Better xCloud Mobile Enhanced v0.2 injection fix' "$FINAL"
+          grep -q 'BX_MOBILE_ENHANCED' "$FINAL"
+          grep -q "const VERSION = '0.2.0'" "$FINAL"
+          grep -q 'waitForHost' "$FINAL"
+
+          OFFICIAL_BYTES="$(wc -c < official-additional.user.js)"
+          head -c "$OFFICIAL_BYTES" "$FINAL" > final-prefix.bin
+          cmp -s official-additional.user.js final-prefix.bin
 
           sha256sum Better-xCloud-Mobile-Enhanced-v0.2-InjectionFix.apk > Better-xCloud-Mobile-Enhanced-v0.2-InjectionFix.sha256.txt
           {
             echo 'Better xCloud Mobile Enhanced v0.2 - Injection Fix'
             echo 'Base: official Better xCloud Android 0.24.2-39'
-            echo "Core userscript patched: $(cat core-path.txt)"
-            echo 'Official Android additional.user.js bootstrap preserved byte-for-byte.'
-            echo 'Overlay waits for BX_EXPOSED and provides a last-resort visible BX+ diagnostic button.'
+            echo 'Injection path: assets/userscripts/additional.user.js, the extension point read by UserscriptUtil.'
+            echo 'Fix: official bootstrap remains byte-for-byte at the start; Mobile Enhanced is appended after it.'
+            echo 'Overlay waits for BX_EXPOSED before initializing and has a last-resort BX+ UI path.'
             echo 'Features: Native Look, Controller Console, Stream Health, touch menu, Alt+F11.'
             echo 'Community-signed test build; signature differs from official APK.'
           } > Better-xCloud-Mobile-Enhanced-v0.2-InjectionFix-BUILD.txt
@@ -181,6 +184,8 @@ jobs:
             Better-xCloud-Mobile-Enhanced-v0.2-InjectionFix.sha256.txt
             Better-xCloud-Mobile-Enhanced-v0.2-InjectionFix-BUILD.txt
             signature-verification.txt
+            official-additional.user.js
+            decoded/assets/userscripts/additional.user.js
             mobile-enhanced/mobile-enhanced-v02.js
           if-no-files-found: error
           compression-level: 0
