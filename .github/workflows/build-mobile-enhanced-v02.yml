@@ -55,14 +55,26 @@ jobs:
           curl -L --fail --retry 3 -o apktool.jar 'https://github.com/iBotPeaches/Apktool/releases/download/v2.11.1/apktool_2.11.1.jar'
           java -jar apktool.jar --version
 
-      - name: Decode APK
+      - name: Decode APK and locate injected userscript
         shell: bash
         run: |
           set -euo pipefail
           java -jar apktool.jar d -f base.apk -o decoded
-          test -f decoded/assets/userscripts/better-xcloud.user.js
-          test -f decoded/assets/userscripts/additional.user.js
-          sha256sum decoded/assets/userscripts/additional.user.js | awk '{print $1}' > official-additional.sha
+          echo '--- assets/userscripts ---'
+          find decoded/assets/userscripts -maxdepth 1 -type f -printf '%s  %p\n' | sort -nr || true
+          ADD='decoded/assets/userscripts/additional.user.js'
+          test -f "$ADD"
+
+          # The v0.1 build assumed a hard-coded core filename. Instead, select the
+          # largest JS userscript other than additional.user.js; that is the bundled
+          # Better xCloud core userscript that the Android shell executes.
+          CORE="$(find decoded/assets/userscripts -maxdepth 1 -type f -name '*.js' ! -name 'additional.user.js' -printf '%s %p\n' | sort -nr | head -n1 | cut -d' ' -f2-)"
+          echo "Detected core userscript: $CORE"
+          test -n "$CORE"
+          test -f "$CORE"
+          printf '%s' "$CORE" > core-path.txt
+          printf '%s' "$ADD" > additional-path.txt
+          sha256sum "$ADD" | awk '{print $1}' > official-additional.sha
           echo "Official additional.user.js SHA: $(cat official-additional.sha)"
 
       - name: Build standalone Mobile Enhanced overlay
@@ -84,7 +96,7 @@ jobs:
               "    // v0.2 injection guard + visible diagnostics.\n"
               "    if (window.BX_MOBILE_ENHANCED && window.BX_MOBILE_ENHANCED.version) return;\n"
               "    window.__BX_MOBILE_ENHANCED_INJECTED__ = '0.2.0';\n"
-              "    try { console.log('[BX Mobile Enhanced v0.2] injected from better-xcloud.user.js'); } catch (_) {}\n",
+              "    try { console.log('[BX Mobile Enhanced v0.2] injected from the core Better xCloud userscript'); } catch (_) {}\n",
               1,
           )
           Path('mobile-enhanced/mobile-enhanced-overlay-v0.2.js').write_text(overlay, encoding='utf-8')
@@ -93,11 +105,12 @@ jobs:
           grep -q "const VERSION = '0.2.0'" mobile-enhanced/mobile-enhanced-overlay-v0.2.js
           grep -q '__BX_MOBILE_ENHANCED_INJECTED__' mobile-enhanced/mobile-enhanced-overlay-v0.2.js
 
-      - name: Inject into the userscript that Better xCloud actually loads
+      - name: Inject into the Better xCloud core userscript
         shell: bash
         run: |
           set -euo pipefail
-          TARGET='decoded/assets/userscripts/better-xcloud.user.js'
+          TARGET="$(cat core-path.txt)"
+          ADD="$(cat additional-path.txt)"
           {
             printf '\n;\n/* === Better xCloud Mobile Enhanced v0.2 injection fix === */\n'
             cat mobile-enhanced/mobile-enhanced-overlay-v0.2.js
@@ -106,9 +119,8 @@ jobs:
           grep -q 'Better xCloud Mobile Enhanced v0.2 injection fix' "$TARGET"
           grep -q '__BX_MOBILE_ENHANCED_INJECTED__' "$TARGET"
 
-          # Keep the official Android integration file unchanged. v0.1 incorrectly
-          # assumed replacing this asset was enough to guarantee execution.
-          test "$(sha256sum decoded/assets/userscripts/additional.user.js | awk '{print $1}')" = "$(cat official-additional.sha)"
+          # Keep the official Android integration asset untouched.
+          test "$(sha256sum "$ADD" | awk '{print $1}')" = "$(cat official-additional.sha)"
 
           sed -i 's/android:versionName="0.24.2"/android:versionName="0.24.2-ME0.2"/' decoded/AndroidManifest.xml || true
           if [ -f decoded/res/values/strings.xml ]; then
@@ -156,8 +168,10 @@ jobs:
         run: |
           set -euo pipefail
           java -jar apktool.jar d -f Better-xCloud-Mobile-Enhanced-v0.2-InjectionFix.apk -o verify-decoded >/dev/null
-          MAIN='verify-decoded/assets/userscripts/better-xcloud.user.js'
+          MAIN="$(find verify-decoded/assets/userscripts -maxdepth 1 -type f -name '*.js' ! -name 'additional.user.js' -printf '%s %p\n' | sort -nr | head -n1 | cut -d' ' -f2-)"
           ADD='verify-decoded/assets/userscripts/additional.user.js'
+          echo "Verifying injected core: $MAIN"
+          test -f "$MAIN"
           grep -q 'Better xCloud Mobile Enhanced v0.2 injection fix' "$MAIN"
           grep -q '__BX_MOBILE_ENHANCED_INJECTED__' "$MAIN"
           grep -q "const VERSION = '0.2.0'" "$MAIN"
@@ -166,9 +180,10 @@ jobs:
           {
             echo 'Better xCloud Mobile Enhanced v0.2 - Injection Fix'
             echo 'Base: official Better xCloud Android 0.24.2-39'
-            echo 'Fix: enhancement overlay is appended to assets/userscripts/better-xcloud.user.js, the core userscript path, instead of replacing additional.user.js.'
+            echo "Core userscript patched: $(cat core-path.txt)"
+            echo 'Fix: enhancement overlay is appended directly to the core Better xCloud userscript loaded by the Android shell.'
             echo 'Official additional.user.js is preserved byte-for-byte.'
-            echo 'Visible injection proof: BX+ button; JS marker window.__BX_MOBILE_ENHANCED_INJECTED__ = 0.2.0.'
+            echo 'Visible proof: BX+ button; JS marker window.__BX_MOBILE_ENHANCED_INJECTED__ = 0.2.0.'
             echo 'Features: Native Look, Controller Console, Stream Health, touch menu, Alt+F11.'
             echo 'Community-signed test build; signature differs from official APK.'
           } > Better-xCloud-Mobile-Enhanced-v0.2-InjectionFix-BUILD.txt
