@@ -1,0 +1,188 @@
+name: Build Better xCloud Mobile Enhanced v0.2 Injection Fix
+
+on:
+  push:
+    branches: [mobile-enhanced-v0.2-injection-fix]
+    paths:
+      - '.github/workflows/build-mobile-enhanced-v02.yml'
+      - 'mobile-enhanced/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Android build tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" 'build-tools;35.0.0' 'platform-tools'
+
+      - name: Download official Better xCloud Android 0.24.2
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -L --fail --retry 3 -o base.apk 'https://github.com/redphx/better-xcloud-android/releases/download/a0.24.2/com.redphx.betterxc_0.24.2-39.apk'
+          EXPECTED='758d957f4709253956f39b214a59866045081a8c79574133d76628d972a459d3'
+          ACTUAL="$(sha256sum base.apk | awk '{print $1}')"
+          echo "Base SHA-256: $ACTUAL"
+          test "$ACTUAL" = "$EXPECTED"
+
+      - name: Download apktool
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -L --fail --retry 3 -o apktool.jar 'https://github.com/iBotPeaches/Apktool/releases/download/v2.11.1/apktool_2.11.1.jar'
+          java -jar apktool.jar --version
+
+      - name: Decode APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          java -jar apktool.jar d -f base.apk -o decoded
+          test -f decoded/assets/userscripts/better-xcloud.user.js
+          test -f decoded/assets/userscripts/additional.user.js
+          sha256sum decoded/assets/userscripts/additional.user.js | awk '{print $1}' > official-additional.sha
+          echo "Official additional.user.js SHA: $(cat official-additional.sha)"
+
+      - name: Build standalone Mobile Enhanced overlay
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          src = Path('mobile-enhanced/additional.user.js').read_text(encoding='utf-8')
+          marker = "(() => {\n    'use strict';"
+          start = src.find(marker)
+          if start < 0:
+              raise SystemExit('Could not locate Mobile Enhanced IIFE in v0.1 source')
+          overlay = src[start:]
+          overlay = overlay.replace("const VERSION = '0.1.0';", "const VERSION = '0.2.0';", 1)
+          overlay = overlay.replace(
+              "    'use strict';\n",
+              "    'use strict';\n\n"
+              "    // v0.2 injection guard + visible diagnostics.\n"
+              "    if (window.BX_MOBILE_ENHANCED && window.BX_MOBILE_ENHANCED.version) return;\n"
+              "    window.__BX_MOBILE_ENHANCED_INJECTED__ = '0.2.0';\n"
+              "    try { console.log('[BX Mobile Enhanced v0.2] injected from better-xcloud.user.js'); } catch (_) {}\n",
+              1,
+          )
+          Path('mobile-enhanced/mobile-enhanced-overlay-v0.2.js').write_text(overlay, encoding='utf-8')
+          PY
+          node --check mobile-enhanced/mobile-enhanced-overlay-v0.2.js
+          grep -q "const VERSION = '0.2.0'" mobile-enhanced/mobile-enhanced-overlay-v0.2.js
+          grep -q '__BX_MOBILE_ENHANCED_INJECTED__' mobile-enhanced/mobile-enhanced-overlay-v0.2.js
+
+      - name: Inject into the userscript that Better xCloud actually loads
+        shell: bash
+        run: |
+          set -euo pipefail
+          TARGET='decoded/assets/userscripts/better-xcloud.user.js'
+          {
+            printf '\n;\n/* === Better xCloud Mobile Enhanced v0.2 injection fix === */\n'
+            cat mobile-enhanced/mobile-enhanced-overlay-v0.2.js
+            printf '\n/* === end Mobile Enhanced v0.2 === */\n'
+          } >> "$TARGET"
+          grep -q 'Better xCloud Mobile Enhanced v0.2 injection fix' "$TARGET"
+          grep -q '__BX_MOBILE_ENHANCED_INJECTED__' "$TARGET"
+
+          # Keep the official Android integration file unchanged. v0.1 incorrectly
+          # assumed replacing this asset was enough to guarantee execution.
+          test "$(sha256sum decoded/assets/userscripts/additional.user.js | awk '{print $1}')" = "$(cat official-additional.sha)"
+
+          sed -i 's/android:versionName="0.24.2"/android:versionName="0.24.2-ME0.2"/' decoded/AndroidManifest.xml || true
+          if [ -f decoded/res/values/strings.xml ]; then
+            sed -i 's#<string name="app_name">Better xCloud</string>#<string name="app_name">Better xCloud Enhanced</string>#' decoded/res/values/strings.xml || true
+          fi
+
+      - name: Rebuild APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          java -jar apktool.jar b decoded -o unsigned.apk
+          test -s unsigned.apk
+          file unsigned.apk
+
+      - name: Generate signing key
+        shell: bash
+        run: |
+          set -euo pipefail
+          keytool -genkeypair -v \
+            -keystore mobile-enhanced.jks \
+            -storepass android \
+            -alias mobileenhanced \
+            -keypass android \
+            -dname 'CN=Better xCloud Mobile Enhanced v0.2, O=Community Build, C=CL' \
+            -keyalg RSA -keysize 2048 -validity 10000
+
+      - name: Align and sign APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          BUILD_TOOLS="$ANDROID_SDK_ROOT/build-tools/35.0.0"
+          "$BUILD_TOOLS/zipalign" -f -p 4 unsigned.apk aligned.apk
+          "$BUILD_TOOLS/apksigner" sign \
+            --ks mobile-enhanced.jks \
+            --ks-key-alias mobileenhanced \
+            --ks-pass pass:android \
+            --key-pass pass:android \
+            --out Better-xCloud-Mobile-Enhanced-v0.2-InjectionFix.apk \
+            aligned.apk
+          "$BUILD_TOOLS/apksigner" verify --verbose --print-certs Better-xCloud-Mobile-Enhanced-v0.2-InjectionFix.apk | tee signature-verification.txt
+          "$BUILD_TOOLS/zipalign" -c -v 4 Better-xCloud-Mobile-Enhanced-v0.2-InjectionFix.apk | tail -n 8
+
+      - name: Verify final APK contains executable injection path
+        shell: bash
+        run: |
+          set -euo pipefail
+          java -jar apktool.jar d -f Better-xCloud-Mobile-Enhanced-v0.2-InjectionFix.apk -o verify-decoded >/dev/null
+          MAIN='verify-decoded/assets/userscripts/better-xcloud.user.js'
+          ADD='verify-decoded/assets/userscripts/additional.user.js'
+          grep -q 'Better xCloud Mobile Enhanced v0.2 injection fix' "$MAIN"
+          grep -q '__BX_MOBILE_ENHANCED_INJECTED__' "$MAIN"
+          grep -q "const VERSION = '0.2.0'" "$MAIN"
+          test "$(sha256sum "$ADD" | awk '{print $1}')" = "$(cat official-additional.sha)"
+          sha256sum Better-xCloud-Mobile-Enhanced-v0.2-InjectionFix.apk > Better-xCloud-Mobile-Enhanced-v0.2-InjectionFix.sha256.txt
+          {
+            echo 'Better xCloud Mobile Enhanced v0.2 - Injection Fix'
+            echo 'Base: official Better xCloud Android 0.24.2-39'
+            echo 'Fix: enhancement overlay is appended to assets/userscripts/better-xcloud.user.js, the core userscript path, instead of replacing additional.user.js.'
+            echo 'Official additional.user.js is preserved byte-for-byte.'
+            echo 'Visible injection proof: BX+ button; JS marker window.__BX_MOBILE_ENHANCED_INJECTED__ = 0.2.0.'
+            echo 'Features: Native Look, Controller Console, Stream Health, touch menu, Alt+F11.'
+            echo 'Community-signed test build; signature differs from official APK.'
+          } > Better-xCloud-Mobile-Enhanced-v0.2-InjectionFix-BUILD.txt
+          cat Better-xCloud-Mobile-Enhanced-v0.2-InjectionFix.sha256.txt
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Better-xCloud-Mobile-Enhanced-v0.2-InjectionFix
+          path: |
+            Better-xCloud-Mobile-Enhanced-v0.2-InjectionFix.apk
+            Better-xCloud-Mobile-Enhanced-v0.2-InjectionFix.sha256.txt
+            Better-xCloud-Mobile-Enhanced-v0.2-InjectionFix-BUILD.txt
+            signature-verification.txt
+            mobile-enhanced/mobile-enhanced-overlay-v0.2.js
+          if-no-files-found: error
+          compression-level: 0
