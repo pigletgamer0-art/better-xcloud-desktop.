@@ -1,0 +1,103 @@
+name: Android Tablet beta APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'android/**'
+      - '.github/workflows/build-android.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android platform
+        run: |
+          sdkmanager --install 'platforms;android-35' 'build-tools;35.0.0'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+
+      - name: Bundle pinned Better xCloud 6.7.12
+        shell: bash
+        run: |
+          set -euo pipefail
+          asset='android/app/src/main/assets/better-xcloud.user.js'
+          curl -fL --retry 3             'https://github.com/redphx/better-xcloud/releases/download/v6.7.12/better-xcloud.user.js'             -o "$asset"
+          echo 'bb78931b4ec94d68cb18da97fa4ae1f88e6b3103bc159905931b2238a51b517e  android/app/src/main/assets/better-xcloud.user.js' | sha256sum -c -
+          cp LICENSE-BETTER-XCLOUD.txt android/app/src/main/assets/LICENSE-BETTER-XCLOUD.txt
+          node --check "$asset"
+          node --check android/app/src/main/assets/ultra-assistant.user.js
+
+      - name: Build test APK
+        run: gradle --no-daemon -p android :app:assembleDebug
+
+      - name: Prepare signed debug APK and hash
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p android/dist
+          cp android/app/build/outputs/apk/debug/app-debug.apk             android/dist/BetterXcloud-Android-Tablet-v0.1.0-beta.1.apk
+          cd android/dist
+          sha256sum BetterXcloud-Android-Tablet-v0.1.0-beta.1.apk > BetterXcloud-Android-Tablet-v0.1.0-beta.1.sha256.txt
+          test -s BetterXcloud-Android-Tablet-v0.1.0-beta.1.apk
+          cat BetterXcloud-Android-Tablet-v0.1.0-beta.1.sha256.txt
+
+      - name: Save APK as build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: BetterXcloud-Android-Tablet-beta
+          path: android/dist/*
+          if-no-files-found: error
+
+      - name: Publish separate Android beta release
+        if: github.ref == 'refs/heads/main'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag='android-v0.1.0-beta.1'
+          cat > android/dist/RELEASE-NOTES.txt <<'EOF'
+          Android Tablet beta 0.1.0 (Ultra Assistant 2.1)
+
+          Experimental Android WebView app bundling Better xCloud 6.7.12 and Ultra Assistant Android Tablet 2.1.
+          Install the APK via Quick Share or direct download. Android 8.0+ required.
+          Checksum is included as a separate .sha256.txt asset.
+
+          Important: This is an unverified beta built with a temporary debug signing key.
+          An embedded WebView may be blocked by Microsoft sign-in or may lack supported WebRTC/gamepad features.
+          Cloud streaming, Fortnite and improved FPS/ping have NOT been tested on the user's tablet.
+          Future APK updates may require uninstalling the beta, which erases local application settings.
+
+          The Windows Desktop release v2.6.0 is unchanged.
+          Unofficial project, not affiliated with Xbox or Microsoft.
+          EOF
+          apk='android/dist/BetterXcloud-Android-Tablet-v0.1.0-beta.1.apk'
+          sha='android/dist/BetterXcloud-Android-Tablet-v0.1.0-beta.1.sha256.txt'
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" "$apk" "$sha" --clobber
+            gh release edit "$tag" --prerelease --notes-file android/dist/RELEASE-NOTES.txt
+          else
+            gh release create "$tag" "$apk" "$sha"               --target "$GITHUB_SHA" --prerelease               --title 'Better xCloud Android Tablet beta 0.1.0'               --notes-file android/dist/RELEASE-NOTES.txt
+          fi
