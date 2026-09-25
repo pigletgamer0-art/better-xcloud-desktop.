@@ -8,6 +8,8 @@
         android:usesCleartextTraffic="false"
         android:hardwareAccelerated="true"
         android:label="Better xCloud Android"
+        android:icon="@drawable/ic_launcher"
+        android:roundIcon="@drawable/ic_launcher"
         android:theme="@android:style/Theme.Material.Light.NoActionBar">
         <activity
             android:name=".MainActivity"
