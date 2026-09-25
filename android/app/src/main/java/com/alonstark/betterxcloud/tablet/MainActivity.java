@@ -73,8 +73,8 @@ public class MainActivity extends Activity {
             String addon = readAsset("ultra-assistant.user.js");
             // Execute only on the expected www.xbox.com play / signed-in auth routes.
             injectedJs = "(function(){'use strict';"
-                    + "if(!/^\\/[A-Za-z-]+\\/(play(?:\\/|$)|auth\\/msa(?:\\/|$))/.test(location.pathname))return;\\n"
-                    + base + "\\n;\\n" + addon + "\\n})();";
+                    + "if(!/^\\/[A-Za-z-]+\\/(play(?:\\/|$)|auth\\/msa(?:\\/|$))/.test(location.pathname))return;\n"
+                    + base + "\n;\n" + addon + "\n})();";
             supportsDocumentStart = WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT);
             if (supportsDocumentStart) {
                 WebViewCompat.addDocumentStartJavaScript(
