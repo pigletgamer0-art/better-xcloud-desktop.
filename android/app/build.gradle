@@ -1,0 +1,34 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.alonstark.betterxcloud.tablet'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.alonstark.betterxcloud.tablet'
+        minSdk 26
+        targetSdk 35
+        versionCode 1
+        versionName '0.1.0-beta.1'
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+        debug {
+            minifyEnabled false
+        }
+    }
+}
+
+dependencies {
+    implementation 'androidx.webkit:webkit:1.12.1'
+}
