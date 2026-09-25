@@ -305,14 +305,10 @@ public class MainActivity extends Activity {
             case KeyEvent.KEYCODE_BUTTON_START: return 9;
             case KeyEvent.KEYCODE_BUTTON_THUMBL: return 10;
             case KeyEvent.KEYCODE_BUTTON_THUMBR: return 11;
-            case KeyEvent.KEYCODE_DPAD_UP:
-            case KeyEvent.KEYCODE_BUTTON_DPAD_UP: return 12;
-            case KeyEvent.KEYCODE_DPAD_DOWN:
-            case KeyEvent.KEYCODE_BUTTON_DPAD_DOWN: return 13;
-            case KeyEvent.KEYCODE_DPAD_LEFT:
-            case KeyEvent.KEYCODE_BUTTON_DPAD_LEFT: return 14;
-            case KeyEvent.KEYCODE_DPAD_RIGHT:
-            case KeyEvent.KEYCODE_BUTTON_DPAD_RIGHT: return 15;
+            case KeyEvent.KEYCODE_DPAD_UP: return 12;
+            case KeyEvent.KEYCODE_DPAD_DOWN: return 13;
+            case KeyEvent.KEYCODE_DPAD_LEFT: return 14;
+            case KeyEvent.KEYCODE_DPAD_RIGHT: return 15;
             case KeyEvent.KEYCODE_BUTTON_MODE: return 16;
             default: return -1;
         }
