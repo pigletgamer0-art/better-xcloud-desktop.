@@ -26,12 +26,17 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Install Android platform
+        shell: bash
         run: |
-          sdkmanager --install 'platforms;android-35' 'build-tools;35.0.0'
+          set -euo pipefail
+          sdkmanager_bin="$(command -v sdkmanager || true)"
+          if [[ -z "$sdkmanager_bin" ]]; then
+            sdkmanager_bin="$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}/cmdline-tools" -name sdkmanager -type f | head -n 1)"
+          fi
+          test -x "$sdkmanager_bin"
+          yes | "$sdkmanager_bin" --licenses >/dev/null || true
+          "$sdkmanager_bin" --install 'platforms;android-35' 'build-tools;35.0.0'
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
