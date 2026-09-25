@@ -227,6 +227,7 @@ public class MainActivity extends Activity {
     }
 
     private static boolean isXboxPlayOrAuth(String url) {
+        if (url == null || url.isEmpty()) return false;
         Uri uri = Uri.parse(url);
         if (!"www.xbox.com".equalsIgnoreCase(uri.getHost())
                 || !"https".equalsIgnoreCase(uri.getScheme())) return false;
