@@ -1,10 +1,13 @@
-# Better xCloud Android Tablet — beta 0.1.1
+# Better xCloud Android Tablet — beta 0.1.2
 
 Android tablet proof-of-concept built separately from the existing Windows Desktop release.
 
 ## Included
 - Native Android launcher with an embedded WebView (Android 8+, minSdk 26).
 - Custom cross-device gaming launcher icon designed for the Android phone and tablet edition.
+- Native Bluetooth/USB gamepad connection detection and a live **Probar control** panel for standard buttons, D-pad, thumbsticks and triggers.
+- Fallback standard Gamepad API bridge if the embedded WebView reports no connected controller; native browser gamepad input is left enabled.
+- Disconnect/reconnect handling and diagnosis of unrecognized Android key codes.
 - Bundled Better xCloud 6.7.12 (MIT); GitHub Actions downloads the pinned original
   release and verifies SHA-256 before building, rather than downloading scripts while playing.
 - Bundled Ultra Assistant Android Tablet 2.1 add-on for profiles, stats diagnosis
@@ -16,6 +19,7 @@ Android tablet proof-of-concept built separately from the existing Windows Deskt
 ## Known limitations
 This is an **experimental Android WebView wrapper**. It is not the same runtime
 as Chromium/Electron Desktop or a userscript-enabled standalone browser.
+Controller button detection in the native tester **does not guarantee** the Xbox cloud stream accepts those inputs. Different controllers expose different Android key/axis mappings, and the Gamepad API fallback may not reach all cross-origin streaming frames.
 Xbox / Microsoft may block signing in from an embedded browser. WebRTC,
 codec support, cloud streaming, touch controls and physical gamepads depend
 on the particular Android System WebView version, device and service support.
@@ -46,7 +50,7 @@ cd android
 gradle --no-daemon :app:assembleDebug
 ```
 Run the Android workflow to build a prerelease APK, compute SHA-256 and publish
-a **separate** GitHub Release tag `android-v0.1.1-beta.2`. This does not modify
+a **separate** GitHub Release tag `android-v0.1.2-beta.3`. This does not modify
 the Windows Desktop `v2.6.0` release.
 
 Unofficial community project, not affiliated with Microsoft, Xbox, or redphx.
