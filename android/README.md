@@ -1,9 +1,10 @@
-# Better xCloud Android Tablet — beta 0.1.0
+# Better xCloud Android Tablet — beta 0.1.1
 
 Android tablet proof-of-concept built separately from the existing Windows Desktop release.
 
 ## Included
 - Native Android launcher with an embedded WebView (Android 8+, minSdk 26).
+- Custom cross-device gaming launcher icon designed for the Android phone and tablet edition.
 - Bundled Better xCloud 6.7.12 (MIT); GitHub Actions downloads the pinned original
   release and verifies SHA-256 before building, rather than downloading scripts while playing.
 - Bundled Ultra Assistant Android Tablet 2.1 add-on for profiles, stats diagnosis
@@ -45,7 +46,7 @@ cd android
 gradle --no-daemon :app:assembleDebug
 ```
 Run the Android workflow to build a prerelease APK, compute SHA-256 and publish
-a **separate** GitHub Release tag `android-v0.1.0-beta.1`. This does not modify
+a **separate** GitHub Release tag `android-v0.1.1-beta.2`. This does not modify
 the Windows Desktop `v2.6.0` release.
 
 Unofficial community project, not affiliated with Microsoft, Xbox, or redphx.
