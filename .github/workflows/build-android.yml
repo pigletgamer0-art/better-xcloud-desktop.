@@ -53,6 +53,7 @@ jobs:
           cp LICENSE-BETTER-XCLOUD.txt android/app/src/main/assets/LICENSE-BETTER-XCLOUD.txt
           node --check "$asset"
           node --check android/app/src/main/assets/ultra-assistant.user.js
+          node --check android/app/src/main/assets/controller-bridge.js
 
       - name: Build test APK
         run: gradle --no-daemon -p android :app:assembleDebug
@@ -62,11 +63,11 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p android/dist
-          cp android/app/build/outputs/apk/debug/app-debug.apk             android/dist/BetterXcloud-Android-Tablet-v0.1.1-beta.2.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk             android/dist/BetterXcloud-Android-Tablet-v0.1.2-beta.3.apk
           cd android/dist
-          sha256sum BetterXcloud-Android-Tablet-v0.1.1-beta.2.apk > BetterXcloud-Android-Tablet-v0.1.1-beta.2.sha256.txt
-          test -s BetterXcloud-Android-Tablet-v0.1.1-beta.2.apk
-          cat BetterXcloud-Android-Tablet-v0.1.1-beta.2.sha256.txt
+          sha256sum BetterXcloud-Android-Tablet-v0.1.2-beta.3.apk > BetterXcloud-Android-Tablet-v0.1.2-beta.3.sha256.txt
+          test -s BetterXcloud-Android-Tablet-v0.1.2-beta.3.apk
+          cat BetterXcloud-Android-Tablet-v0.1.2-beta.3.sha256.txt
 
       - name: Save APK as build artifact
         uses: actions/upload-artifact@v4
@@ -82,27 +83,32 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          tag='android-v0.1.1-beta.2'
+          tag='android-v0.1.2-beta.3'
           cat > android/dist/RELEASE-NOTES.txt <<'EOF'
-          Android Tablet beta 0.1.1 (Ultra Assistant 2.1)
+          Android Tablet beta 0.1.2 (Ultra Assistant 2.1)
 
-          Experimental Android WebView app bundling Better xCloud 6.7.12 and Ultra Assistant Android Tablet 2.1.\n          New: custom Android launcher icon showing cloud gaming on a phone and tablet.
-          Install the APK via Quick Share or direct download. Android 8.0+ required.
-          Checksum is included as a separate .sha256.txt asset.
+          Experimental Android WebView app bundling Better xCloud 6.7.12 and Ultra Assistant 2.1.
+          New: native Bluetooth and USB gamepad detection, live button/stick/trigger tester,
+          reconnect handling and fallback Gamepad API when WebView sees no physical controller.
+          Keeps the custom Android cloud-gaming launcher icon.
+          Install via Quick Share or direct download. Android 8.0+ required.
+          Includes a SHA-256 checksum.
 
-          Important: This is an unverified beta built with a temporary debug signing key.
-          An embedded WebView may be blocked by Microsoft sign-in or may lack supported WebRTC/gamepad features.
-          Cloud streaming, Fortnite and improved FPS/ping have NOT been tested on the user's tablet.
-          Because debug builds may use different signing keys, uninstall beta 1 before installing beta 2 if Android reports a signature conflict. Uninstalling erases local settings.
+          This is an unverified beta signed with a temporary debug key.
+          Gamepad detection in the Android tester does NOT guarantee the Xbox game will respond:
+          sign-in, WebRTC, cross-origin frames and browser gamepad support depend on the device.
+          Fortnite and improved FPS/ping are NOT tested on the user's tablet.
+          If upgrading shows an Android signing conflict, uninstalling the old beta will erase its
+          local session and settings. Export needed settings before uninstalling.
 
           The Windows Desktop release v2.6.0 is unchanged.
           Unofficial project, not affiliated with Xbox or Microsoft.
           EOF
-          apk='android/dist/BetterXcloud-Android-Tablet-v0.1.1-beta.2.apk'
-          sha='android/dist/BetterXcloud-Android-Tablet-v0.1.1-beta.2.sha256.txt'
+          apk='android/dist/BetterXcloud-Android-Tablet-v0.1.2-beta.3.apk'
+          sha='android/dist/BetterXcloud-Android-Tablet-v0.1.2-beta.3.sha256.txt'
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release upload "$tag" "$apk" "$sha" --clobber
             gh release edit "$tag" --prerelease --notes-file android/dist/RELEASE-NOTES.txt
           else
-            gh release create "$tag" "$apk" "$sha"               --target "$GITHUB_SHA" --prerelease               --title 'Better xCloud Android Tablet beta 0.1.1'               --notes-file android/dist/RELEASE-NOTES.txt
+            gh release create "$tag" "$apk" "$sha"               --target "$GITHUB_SHA" --prerelease               --title 'Better xCloud Android Tablet beta 0.1.2'               --notes-file android/dist/RELEASE-NOTES.txt
           fi
