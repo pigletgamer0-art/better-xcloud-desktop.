@@ -1,0 +1,6 @@
+/* Cache only this first-party app shell, not Xbox streaming or login traffic. */
+const CACHE='better-xcloud-web-lab-shell-v2';
+const FILES=['./','./index.html','./styles.css','./app.js','./manifest.webmanifest','./assets/icon.svg','./assets/icon-192.png','./assets/icon-512.png'];
+self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(FILES.map(p=>new URL(p,self.registration.scope).href))).then(()=>self.skipWaiting())));
+self.addEventListener('activate',event=>event.waitUntil(Promise.all([caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('better-xcloud-web-lab-shell-')&&k!==CACHE).map(k=>caches.delete(k)))),self.clients.claim()])));
+self.addEventListener('fetch',event=>{const q=event.request;if(q.method!=='GET')return;const url=new URL(q.url);if(url.origin!==self.location.origin||!url.href.startsWith(self.registration.scope))return;event.respondWith((async()=>{const cached=await caches.match(q,{ignoreSearch:true});if(cached)return cached;try{return await fetch(q);}catch{return q.mode==='navigate'?(await caches.match(new URL('./index.html',self.registration.scope).href))||Response.error():Response.error();}})());});
