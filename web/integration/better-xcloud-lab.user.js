@@ -1,7 +1,9 @@
 // ==UserScript==
 // @name         Better xCloud Web Lab - Pestaña Laboratorio
 // @namespace    https://github.com/pigletgamer0-art/better-xcloud-desktop.
-// @version      0.1.1
+// @version      0.2.0
+// @updateURL    https://pigletgamer0-art.github.io/better-xcloud-desktop./web/integration/better-xcloud-lab.user.js
+// @downloadURL  https://pigletgamer0-art.github.io/better-xcloud-desktop./web/integration/better-xcloud-lab.user.js
 // @description  Una pestaña especial dentro del menú de ajustes, sin overlays sobre el juego.
 // @match        https://www.xbox.com/play*
 // @match        https://www.xbox.com/*/play*
@@ -9,7 +11,7 @@
 // @run-at       document-idle
 // ==/UserScript==
 (()=>{'use strict';
-const KEY='bx-web-lab-url',DEFAULT='https://pigletgamer0-art.github.io/better-xcloud-desktop./web/',SVG='http://www.w3.org/2000/svg';
+const KEY='bx-web-lab-url',DEFAULT='https://pigletgamer0-art.github.io/better-xcloud-desktop./web/?setup=1',SVG='http://www.w3.org/2000/svg';
 const H=(tag,text,attrs={})=>{const e=document.createElement(tag);if(text!==null)e.textContent=text;for(const [k,v] of Object.entries(attrs))e.setAttribute(k,v);return e;};
 const getUrl=()=>{try{return localStorage.getItem(KEY)||DEFAULT;}catch{return DEFAULT;}};
 function openUrl(s){try{const u=new URL(s);if(!['http:','https:'].includes(u.protocol))throw Error('protocol');window.open(u.href,'_blank','noopener,noreferrer');}catch{alert('La dirección debe empezar con https:// o http://');}}

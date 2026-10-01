@@ -1,8 +1,14 @@
 /* Better xCloud Web Lab 0.1.1: launcher + diagnostics, with no local games. */
 (()=>{'use strict';
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
-const views={home:'Inicio',cloud:'Xbox Cloud Gaming',lab:'Laboratorio'};
+const views={home:'Inicio',cloud:'Preparar Xbox',lab:'Laboratorio'};
 let installPrompt=null,toastTimer=0,connectedPad=null;
+const XBOX_URL="https://www.xbox.com/play/";
+const PREF="better-xcloud-web-auto-open-v1";
+const setupRequested=new URLSearchParams(location.search).has("setup");
+const readAuto=()=>{try{return localStorage.getItem(PREF)==="yes";}catch{return false;}};
+const writeAuto=state=>{try{localStorage.setItem(PREF,state?"yes":"no");}catch{}};
+const openXbox=()=>{location.assign(XBOX_URL);};
 function msg(t){const el=$('#toast');el.textContent=t;el.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.hidden=true,3500);}
 function closeMenu(){const nav=$('.sidebar');nav.classList.remove('mobile-open');$('#menu-toggle').setAttribute('aria-expanded','false');}
 function showPage(t){if(!Object.hasOwn(views,t))return;$$('.view').forEach(el=>el.classList.toggle('visible',el.dataset.page===t));$$('.nav-link').forEach(el=>{const active=el.dataset.view===t;el.classList.toggle('active',active);if(active)el.setAttribute('aria-current','page');else el.removeAttribute('aria-current');});$('#current-page').textContent=views[t];closeMenu();if(t==='lab')updateStatus();window.scrollTo(0,0);}
@@ -19,5 +25,9 @@ function detectPad(){let pads=[];try{pads=navigator.getGamepads?.()||[];}catch{}
 window.addEventListener('gamepadconnected',detectPad);window.addEventListener('gamepaddisconnected',detectPad);setInterval(detectPad,1200);
 function install(){if(installPrompt){installPrompt.prompt();installPrompt.userChoice.finally(()=>{installPrompt=null;$('#install-app').hidden=true;});}else msg('Si está disponible, usa Instalar desde el menú del navegador. En iPhone: Compartir → Añadir a inicio.');}
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;$('#install-app').hidden=false;});window.addEventListener('appinstalled',()=>{$('#install-app').hidden=true;msg('Aplicación instalada.');});$('#install-app').addEventListener('click',install);$('#install-secondary').addEventListener('click',install);
+$('#auto-open-xbox').checked=readAuto();
+$('#auto-open-xbox').addEventListener('change',e=>{writeAuto(e.target.checked);msg(e.target.checked?'La próxima vez se abrirá Xbox directamente.':'Se mostrará el menú al abrir esta web.');});
+$('#finish-setup').addEventListener('click',()=>{writeAuto(true);openXbox();});
 updateStatus();detectPad();
+if(readAuto()&&!setupRequested){openXbox();}
 })();

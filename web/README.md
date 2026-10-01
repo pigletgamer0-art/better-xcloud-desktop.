@@ -1,16 +1,19 @@
-# Better xCloud Web Lab — 0.1.1
+# Better xCloud Web Lab — 0.2.0
+Versión web comunitaria sin minijuegos y sin Ultimate Sandbox.
 
-Sitio comunitario, sin minijuegos y sin Ultimate Sandbox.
-
-- Inicio, Xbox Cloud Gaming y Laboratorio.
-- Laboratorio: conexión, control detectado, instalación y caché offline de la **interfaz**.
-- Los juegos de Xbox siempre requieren Internet y acceso válido.
-- Userscript opcional: `web/integration/better-xcloud-lab.user.js` integra la pestaña Laboratorio dentro de los ajustes de Better xCloud; requiere un navegador con gestores de scripts.
-- Sin elementos flotantes durante la partida.
+## Uso
+- Acceso directo a `https://www.xbox.com/play/` para jugar en Xbox Cloud Gaming.
+- El Better xCloud **oficial** se ejecuta en esa página únicamente después de instalar el userscript original en un navegador compatible (no se puede inyectar desde GitHub Pages por políticas de seguridad del navegador).
+- Instala la versión oficial desde https://github.com/redphx/better-xcloud/releases/latest/download/better-xcloud.user.js.
+- Instala opcionalmente `web/integration/better-xcloud-lab.user.js` para agregar la pestaña Laboratorio a los ajustes originales de Better xCloud, sin superposiciones sobre el stream.
+- Desde el lanzador, confirma "Ya lo instalé" para abrir Xbox automáticamente las siguientes veces; `?setup=1` permite volver a la configuración.
+- Interfaz web instalable y caché offline de la interfaz, pero Xbox Cloud Gaming siempre requiere Internet.
 - Web: https://pigletgamer0-art.github.io/better-xcloud-desktop./web/
 
+## Compatibilidad
+En PC Chrome/Edge con Tampermonkey; Android Edge con Tampermonkey; Safari/iOS requiere un gestor de userscripts compatible. Una PWA instalada no garantiza soporte de extensiones.
+
 ## Publicación
+El flujo GitHub Actions `.github/workflows/deploy-web-lab.yml` publica `web/` en GitHub Pages cada vez que cambia el directorio.
 
-El flujo de GitHub Actions `.github/workflows/deploy-web-lab.yml` publica automáticamente `web/` a GitHub Pages cuando se modifica la carpeta. **Requiere habilitar Pages > Build and deployment > Source: GitHub Actions** en Settings del repositorio. Si GitHub Pages no está habilitado, la acción falla hasta que el propietario cambie esa opción.
-
-Este proyecto no está afiliado a Microsoft, Xbox o redphx.
+No está afiliado a Microsoft, Xbox ni redphx. La instalación oficial debe provenir del repositorio de redphx. No desbloquea contenidos de pago.
