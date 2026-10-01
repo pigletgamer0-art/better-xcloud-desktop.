@@ -1,19 +1,13 @@
-# Better xCloud Web Lab — 0.2.0
-Versión web comunitaria sin minijuegos y sin Ultimate Sandbox.
+# Better xCloud Web Lab v0.3.0
 
-## Uso
-- Acceso directo a `https://www.xbox.com/play/` para jugar en Xbox Cloud Gaming.
-- El Better xCloud **oficial** se ejecuta en esa página únicamente después de instalar el userscript original en un navegador compatible (no se puede inyectar desde GitHub Pages por políticas de seguridad del navegador).
-- Instala la versión oficial desde https://github.com/redphx/better-xcloud/releases/latest/download/better-xcloud.user.js.
-- Instala opcionalmente `web/integration/better-xcloud-lab.user.js` para agregar la pestaña Laboratorio a los ajustes originales de Better xCloud, sin superposiciones sobre el stream.
-- Desde el lanzador, confirma "Ya lo instalé" para abrir Xbox automáticamente las siguientes veces; `?setup=1` permite volver a la configuración.
-- Interfaz web instalable y caché offline de la interfaz, pero Xbox Cloud Gaming siempre requiere Internet.
-- Web: https://pigletgamer0-art.github.io/better-xcloud-desktop./web/
+Web complementaria de Xbox Cloud Gaming: https://pigletgamer0-art.github.io/better-xcloud-desktop./web/
 
-## Compatibilidad
-En PC Chrome/Edge con Tampermonkey; Android Edge con Tampermonkey; Safari/iOS requiere un gestor de userscripts compatible. Una PWA instalada no garantiza soporte de extensiones.
+## Un instalador para Better xCloud + Laboratorio
 
-## Publicación
-El flujo GitHub Actions `.github/workflows/deploy-web-lab.yml` publica `web/` en GitHub Pages cada vez que cambia el directorio.
+`web/integration/better-xcloud-completo.user.js` es un archivo para gestores de userscripts; utiliza `@require` para cargar Better xCloud **original 6.7.12** desde el GitHub de redphx y nuestro userscript `web/integration/better-xcloud-lab.user.js`. Esta técnica requiere la extensión correspondiente, permiso y confirmación: una web normal no puede instalar scripts en Xbox desde otro dominio.
 
-No está afiliado a Microsoft, Xbox ni redphx. La instalación oficial debe provenir del repositorio de redphx. No desbloquea contenidos de pago.
+Si tenías scripts instalados individualmente, desactiva los duplicados. Nuestro Laboratorio va dentro del menú de ajustes, sin añadir botón flotante al juego.
+
+En Android, una APK con WebView integrado puede inyectar scripts en su propio WebView y es una **alternativa nativa distinta**; no puede instalarlos en todos los navegadores. El APK Mobile Enhanced aportado como referencia incluye mejoras de mandos, imagen y comprobación de que Better xCloud esté disponible, pero también crea un botón flotante que no reutilizamos.
+
+Guías de Better xCloud: https://better-xcloud.github.io/ ; https://better-xcloud.github.io/android/ . Xbox Cloud Gaming requiere Internet y acceso autorizado a los juegos. No incluye minijuegos ni Ultimate Sandbox. No estamos afiliados con Microsoft ni con el autor original.

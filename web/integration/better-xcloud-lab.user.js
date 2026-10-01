@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Better xCloud Web Lab - Pestaña Laboratorio
 // @namespace    https://github.com/pigletgamer0-art/better-xcloud-desktop.
-// @version      0.2.0
+// @version      0.3.0
 // @updateURL    https://pigletgamer0-art.github.io/better-xcloud-desktop./web/integration/better-xcloud-lab.user.js
 // @downloadURL  https://pigletgamer0-art.github.io/better-xcloud-desktop./web/integration/better-xcloud-lab.user.js
 // @description  Una pestaña especial dentro del menú de ajustes, sin overlays sobre el juego.
@@ -11,6 +11,7 @@
 // @run-at       document-idle
 // ==/UserScript==
 (()=>{'use strict';
+if(window.__bxWebLabLoaded)return;window.__bxWebLabLoaded=true;
 const KEY='bx-web-lab-url',DEFAULT='https://pigletgamer0-art.github.io/better-xcloud-desktop./web/?setup=1',SVG='http://www.w3.org/2000/svg';
 const H=(tag,text,attrs={})=>{const e=document.createElement(tag);if(text!==null)e.textContent=text;for(const [k,v] of Object.entries(attrs))e.setAttribute(k,v);return e;};
 const getUrl=()=>{try{return localStorage.getItem(KEY)||DEFAULT;}catch{return DEFAULT;}};
@@ -20,5 +21,15 @@ function makeContent(){const c=H('section',null,{'data-tab-group':'laboratorio',
 function attach(){const root=document.querySelector('.bx-settings-dialog');if(!root)return;const tabs=root.querySelector('.bx-settings-tabs'),panels=root.querySelector('.bx-settings-tab-content');if(!tabs||!panels||tabs.querySelector('[data-group="laboratorio"]')||!tabs.querySelector('svg[data-group]'))return;
 if(!document.getElementById('bx-lab-style'))document.head.append(H('style',`.bx-lab-tab{cursor:pointer;padding:5px;border-radius:8px;color:inherit}.bx-lab-tab.bx-active,.bx-lab-tab:hover{background:#42792a}.bx-lab-content{padding:17px;overflow:auto;max-width:650px;color:white}.bx-lab-content.bx-gone{display:none!important}.bx-lab-content h2{font-size:1.2rem}.bx-lab-content p{font-size:.9rem;line-height:1.6;opacity:.85}.bx-lab-content label{display:block;font-size:.85rem;margin:14px 0 8px}.bx-lab-content input{width:100%;box-sizing:border-box;background:#111b16;border:1px solid #628251;color:white;border-radius:7px;padding:10px;font:inherit}.bx-lab-content button{cursor:pointer;background:#347629;color:white;border:1px solid #79bd52;border-radius:8px;padding:11px 14px;margin:10px 10px 10px 0;font-weight:bold`,{id:'bx-lab-style'}));
 const tab=makeTab(),content=makeContent();tabs.append(tab);panels.append(content);const select=()=>{Array.from(panels.children).forEach(e=>{if(e.dataset.tabGroup)e.classList.toggle('bx-gone',e!==content);});Array.from(tabs.children).forEach(e=>e.classList.toggle('bx-active',e===tab));const sel=root.querySelector('.bx-settings-tab-contents > :first-child');if(sel&&sel!==panels)sel.classList.add('bx-gone');tab.focus();};tab.addEventListener('click',select);tab.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();select();}});}
-let scheduled=false;new MutationObserver(()=>{if(scheduled)return;scheduled=true;requestAnimationFrame(()=>{scheduled=false;attach();});}).observe(document.documentElement,{subtree:true,childList:true});attach();
+let scheduled=false;
+function observeSettings(){
+  if(!document.documentElement){document.addEventListener('DOMContentLoaded',observeSettings,{once:true});return;}
+  new MutationObserver(()=>{
+    if(scheduled)return;
+    scheduled=true;
+    requestAnimationFrame(()=>{scheduled=false;attach();});
+  }).observe(document.documentElement,{subtree:true,childList:true});
+  attach();
+}
+observeSettings();
 })();

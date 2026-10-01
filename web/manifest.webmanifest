@@ -2,7 +2,7 @@
   "id": "./",
   "name": "Better xCloud Web Lab",
   "short_name": "xCloud Lab",
-  "description": "Lanzador de Xbox Cloud Gaming con instalación de Better xCloud oficial y pestaña Laboratorio",
+  "description": "Lanzador Xbox con instalador de Better xCloud y pestaña Laboratorio para navegadores compatibles",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

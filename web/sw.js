@@ -1,5 +1,5 @@
 /* Cache only this first-party app shell, not Xbox streaming or login traffic. */
-const CACHE='better-xcloud-web-lab-shell-v3';
+const CACHE='better-xcloud-web-lab-shell-v4';
 const FILES=['./','./index.html','./styles.css','./app.js','./manifest.webmanifest','./assets/icon.svg','./assets/icon-192.png','./assets/icon-512.png'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(FILES.map(p=>new URL(p,self.registration.scope).href))).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(Promise.all([caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('better-xcloud-web-lab-shell-')&&k!==CACHE).map(k=>caches.delete(k)))),self.clients.claim()])));

@@ -1,4 +1,4 @@
-/* Better xCloud Web Lab 0.1.1: launcher + diagnostics, with no local games. */
+/* Better xCloud Web Lab 0.3.0: browser-aware installation helper. */
 (()=>{'use strict';
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const views={home:'Inicio',cloud:'Preparar Xbox',lab:'Laboratorio'};
@@ -28,6 +28,21 @@ window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installProm
 $('#auto-open-xbox').checked=readAuto();
 $('#auto-open-xbox').addEventListener('change',e=>{writeAuto(e.target.checked);msg(e.target.checked?'La próxima vez se abrirá Xbox directamente.':'Se mostrará el menú al abrir esta web.');});
 $('#finish-setup').addEventListener('click',()=>{writeAuto(true);openXbox();});
+function browserGuide(){
+const ua=navigator.userAgent||"";
+const ios=/iPad|iPhone|iPod/i.test(ua)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+const android=/Android/i.test(ua),edgeAndroid=/EdgA\//.test(ua);
+const chromium=/Chrome|Chromium|Edg|OPR/.test(ua)&&!android&&!ios;
+let name="Navegador",hint="Los scripts necesitan un gestor compatible y tu autorización.",guide="https://better-xcloud.github.io/";
+if(ios){name="iPhone / iPad";hint="Safari admite extensiones como Userscripts. Otros navegadores pueden no permitir la integración.";guide="https://better-xcloud.github.io/safari/";}
+else if(edgeAndroid){name="Microsoft Edge para Android";hint="Prueba Tampermonkey desde Extensiones, luego instala la integración completa.";guide="https://better-xcloud.github.io/android-browser/";}
+else if(android){name="Android";hint="En este navegador puedes abrir Xbox, pero para los scripts utiliza un navegador compatible o una aplicación Android con WebView.";guide="https://better-xcloud.github.io/android-browser/";}
+else if(chromium){name="PC · Chrome / Edge / Chromium";hint="Instala Tampermonkey y confirma el archivo de integración completa.";guide="https://better-xcloud.github.io/chromium/";}
+else if(/Firefox|FxiOS/.test(ua)){name="Firefox";hint="La ejecución depende del gestor de scripts y de compatibilidad con las funciones de Xbox Cloud Gaming.";guide="https://better-xcloud.github.io/";}
+else if(/Safari/.test(ua)){name="Safari";hint="Se requiere una extensión compatible de userscripts y tu autorización.";guide="https://better-xcloud.github.io/safari/";}
+$('#browser-name').textContent=name;$('#browser-help').textContent=hint;$('#browser-guide').href=guide;$('#extension-guide').href=guide;
+}
+browserGuide();
 updateStatus();detectPad();
 if(readAuto()&&!setupRequested){openXbox();}
 })();
