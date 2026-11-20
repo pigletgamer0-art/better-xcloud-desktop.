@@ -1,0 +1,98 @@
+name: Desktop 4.0 lightweight validation
+
+on:
+  push:
+    branches:
+      - feature/desktop-4.0-ui-performance
+    paths:
+      - 'patches/**'
+      - '.github/workflows/build-4.0-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.x'
+          cache: false
+
+      - name: Reconstruct and verify source archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import base64, hashlib
+          parts = sorted(Path('source-package').glob('part-*.b64'))
+          if len(parts) != 8:
+              raise SystemExit(f'Expected 8 source chunks, found {len(parts)}')
+          data = base64.b64decode(''.join(p.read_text(encoding='utf-8') for p in parts), validate=True)
+          expected = 'cb526df0b52c22b395637ce1f1d686668835d484bfd64933db319221166f734b'
+          actual = hashlib.sha256(data).hexdigest()
+          if actual != expected:
+              raise SystemExit(f'Source archive SHA-256 mismatch: {actual}')
+          Path('/tmp/repo-source-min.zip').write_bytes(data)
+          print(f'Verified source archive: {actual}')
+          PY
+          mkdir -p build/repo_src
+          unzip -q /tmp/repo-source-min.zip -d build
+
+      - name: Apply lightweight Electron changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd build/repo_src
+          patch --batch -p1 < ../../patches/desktop-4.0-performance.patch
+          node --check app/main.js
+          ! grep -Eq 'disable-background-timer-throttling|disable-renderer-backgrounding|disable-backgrounding-occluded-windows|backgroundThrottling: false' app/main.js
+          grep -q 'width: 1280' app/main.js
+          grep -q 'minWidth: 800' app/main.js
+
+      - name: Download and verify Better xCloud 6.7.12
+        shell: bash
+        run: |
+          set -euo pipefail
+          url='https://github.com/redphx/better-xcloud/releases/download/v6.7.12/better-xcloud.user.js'
+          out='build/repo_src/app/scripts/better-xcloud.user.js'
+          curl -fL "$url" -o "$out"
+          echo 'bb78931b4ec94d68cb18da97fa4ae1f88e6b3103bc159905931b2238a51b517e  build/repo_src/app/scripts/better-xcloud.user.js' | sha256sum -c -
+
+      - name: Prepare embedded app
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/repo_src/installer/embedded
+          cp -R build/repo_src/app build/repo_src/installer/embedded/app
+
+      - name: Cross-compile Windows validation executable
+        shell: bash
+        working-directory: build/repo_src/installer
+        env:
+          GOOS: windows
+          GOARCH: amd64
+          CGO_ENABLED: '0'
+        run: |
+          set -euo pipefail
+          go build -trimpath -ldflags='-H=windowsgui -s -w' -o BetterXcloud-Desktop-4.0-Validation.exe .
+          sha256sum BetterXcloud-Desktop-4.0-Validation.exe > BetterXcloud-Desktop-4.0-Validation.sha256.txt
+          stat -c 'Validation executable size: %s bytes' BetterXcloud-Desktop-4.0-Validation.exe
+
+      - name: Upload validation build (not for installation)
+        uses: actions/upload-artifact@v4
+        with:
+          name: BetterXcloud-Desktop-4.0-validation-only
+          path: |
+            build/repo_src/installer/BetterXcloud-Desktop-4.0-Validation.exe
+            build/repo_src/installer/BetterXcloud-Desktop-4.0-Validation.sha256.txt
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 3
