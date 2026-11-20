@@ -8,6 +8,7 @@ on:
       - 'docs/**'
       - 'prototype/**'
       - 'patches/**'
+      - 'app-4.0/**'
       - '.github/workflows/prepare-4.0-source.yml'
   workflow_dispatch:
 
@@ -51,6 +52,8 @@ jobs:
           cd source-inspection/repo_src
           patch --batch -p1 < ../../patches/desktop-4.0-performance.patch
           patch --batch -p1 < ../../patches/desktop-4.0-updater.patch
+          patch --batch -p1 < ../../patches/desktop-4.0-shell.patch
+          cp ../../app-4.0/home.html app/home.html
           node --check app/main.js
           ! grep -Eq 'disable-background-timer-throttling|disable-renderer-backgrounding|disable-backgrounding-occluded-windows|backgroundThrottling: false' app/main.js
           grep -nE 'width: 1280|minWidth: 800|backgroundThrottling' app/main.js || true
