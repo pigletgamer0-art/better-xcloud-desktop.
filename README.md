@@ -1,75 +1,68 @@
 # Better xCloud Desktop
 
-Aplicación independiente para **Windows 10/11 x64** que ejecuta Xbox Cloud Gaming con un runtime propio de Electron/Chromium e integra Better xCloud.
+Aplicación comunitaria para **Windows 10/11 x64** que ejecuta Xbox Cloud Gaming en un runtime de escritorio propio e integra Better xCloud.
 
 > Proyecto no oficial. No está afiliado con Microsoft, Xbox ni con el autor original de Better xCloud.
 
-## Versión actual
+## Desarrollo 4.0
 
-**4.0.0-beta.1 (en desarrollo)**
+**Versión objetivo: 4.0.0-beta.1**
 
-### Incluye
+La rama `feature/desktop-4.0-ui-performance` contiene el trabajo de rediseño y optimización. La interfaz nueva se está integrando y validando; todavía no es una publicación estable.
 
-- App independiente: no abre Microsoft Edge y no requiere Tampermonkey.
-- Better xCloud Original se obtiene desde el último release compatible de redphx/better-xcloud durante la compilación.
-- Instalador y desinstalador para Windows.
-- Registro en **Configuración → Aplicaciones instaladas**.
-- Accesos directos en Menú Inicio.
-- Sesión y ajustes guardados en un perfil separado.
-- Detección periódica de nuevas versiones oficiales de Better xCloud (descarga validada y aviso para reiniciar).
+### Interfaz 4.0
 
-## Estado de la versión 4.0\n\nEsta rama corresponde a la beta de desarrollo. Los ejecutables de validación no son instaladores estables ni deben confundirse con la publicación oficial 4.0.0. Consulta [el plan de lanzamiento](docs/RELEASE-4.0.md).\n\n## Controles
+- Navegación: **Inicio**, **Jugar**, **Laboratorio** y **Ajustes**.
+- Tema oscuro con acentos azules y cian.
+- Diseño adaptable a pantallas de portátil y ventanas pequeñas.
+- Tipografía del sistema y recursos locales.
+- Sin framework visual, fuentes remotas ni animaciones pesadas.
+- Accesibilidad básica: foco visible, navegación por teclado y respeto a `prefers-reduced-motion`.
 
-- `F11`: pantalla completa
-- `Ctrl + R`: recargar
-- `Alt + ← / →`: navegar atrás/adelante
+Los paneles de Laboratorio y Ajustes son una vista previa visual hasta que se conecten con las funciones existentes. No representan controles ya implementados.
 
-## Instalación
+### Objetivos de rendimiento
 
-1. Descarga o compila `BetterXcloud-Desktop-Setup-v2.6.exe`.
-2. Ejecútalo en Windows 10/11 x64.
-3. En la primera instalación se descargará Electron 44.3.0 para Windows x64 desde sus releases oficiales.
-4. El runtime queda instalado en `%LOCALAPPDATA%\BetterXcloudDesktop`.
-5. La sesión, ajustes, respaldos y logs se guardan en `%APPDATA%\BetterXcloudDesktop`.
+- Mantener un único runtime Electron/Chromium.
+- No modificar el pipeline de streaming durante el rediseño visual.
+- Evitar trabajo periódico en paneles ocultos cuando no sea necesario.
+- Reducir escrituras repetidas de configuración.
+- Medir inicio, memoria, CPU en reposo y estabilidad durante una sesión antes de afirmar mejoras.
 
-El instalador no está firmado digitalmente, por lo que Windows SmartScreen puede mostrar una advertencia.
+### Funciones que deben conservarse
 
-## Compilar la beta de validación
+- Perfiles y distribución de controles Xbox, PlayStation y Nintendo/Switch.
+- Native Look.
+- MIC Sensitivity.
+- Ultra Assistant y Stream Health.
+- Sesión, ajustes y datos del usuario.
+- Instalador y desinstalador de Windows.
 
-Requisitos: **Go 1.22 o superior**.
+### Sincronización con Better xCloud Original
 
-Para reproducir la compilación de validación, copia `app/` dentro de `installer/embedded/app/`. Luego, desde `installer/`:
+La aplicación comprueba nuevas versiones del proyecto oficial `redphx/better-xcloud`. La actualización debe validarse antes de reemplazar la copia local y solicitar el reinicio para activarla. No se debe sustituir el script durante una sesión activa. Si falla la descarga o la validación, se conserva la versión que ya funciona.
 
-```bat
-set GOOS=windows
-set GOARCH=amd64
-set CGO_ENABLED=0
-go build -trimpath -ldflags="-H=windowsgui -s -w" -o BetterXcloud-Desktop-4.0.0-beta.1-Validation.exe .
-```
+## Estado de publicación
 
-Este ejecutable de validación no debe confundirse con el instalador oficial. El runtime de Electron no se incluye; el instalador final lo descargará y verificará durante la primera instalación.
+- [ ] Integración de la interfaz con el runtime Electron.
+- [ ] Regresión de controles, audio, micrófono y streaming.
+- [ ] Pruebas de instalación y actualización desde versiones anteriores.
+- [ ] Medición de CPU, memoria y tiempo de inicio en Windows.
+- [ ] Compilación final y publicación de instalador con checksum.
 
-## Verificación del runtime
+**No descargar ni tratar los ejecutables de validación como la versión estable 4.0.0.** La publicación final se hará únicamente después de superar las pruebas.
 
-Electron 44.3.0 para Windows x64 se verifica con SHA-256 antes de instalarse.
+Consulta:
+- [Hoja de ruta 4.0](docs/ROADMAP-4.0.md)
+- [Política de rendimiento](docs/PERFORMANCE-4.0.md)
+- [Plan de publicación](docs/RELEASE-4.0.md)
 
-SHA-256 esperado:
+## Versión estable anterior
 
-```text
-26bf9a617d58d81772b3d68305d59ee48272969c15083c06db634a77358a8d9d
-```
-
-## Estructura
-
-- `app/`: aplicación Electron.
-- `app/scripts/`: Better xCloud integrado.
-- `installer/`: instalador/desinstalador escrito en Go.
-- `.github/workflows/`: compilación automática del instalador para Windows.
+La rama estable conserva las versiones anteriores y sus instrucciones de instalación. El historial no se elimina para que sea posible revisar cambios y recuperar código si fuera necesario.
 
 ## Licencias y atribución
 
-**Better xCloud** fue creado por **redphx**. La idea, el nombre y la funcionalidad original de Better xCloud provienen del proyecto original de redphx. **Better xCloud Desktop** es únicamente un wrapper/cliente de escritorio comunitario no oficial construido alrededor de ese proyecto y no pretende presentarse como el proyecto original ni como una versión oficial.
+**Better xCloud** fue creado por **redphx** y se distribuye bajo licencia MIT. Se conservan sus avisos de copyright y la licencia original en `LICENSE-BETTER-XCLOUD.txt`.
 
-Better xCloud se distribuye bajo la licencia MIT. La copia completa de su licencia original, incluyendo todos los avisos de copyright que deben conservarse, está en `LICENSE-BETTER-XCLOUD.txt`. Consulta también `NOTICE.txt` para la atribución de componentes de terceros.
-
-Electron también se distribuye bajo licencia MIT. El código propio de este empaquetado se publica bajo licencia MIT salvo componentes de terceros, que conservan sus respectivas licencias.
+Better xCloud Desktop es un cliente comunitario no oficial. No pretende presentarse como el proyecto original ni como una versión oficial de Microsoft o Xbox. Consulta también `NOTICE.txt` para los avisos de terceros. El código propio de este empaquetado se publica bajo MIT salvo componentes que mantengan licencias distintas.
