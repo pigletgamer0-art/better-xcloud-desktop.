@@ -3,66 +3,59 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="color-scheme" content="dark">
-<meta name="theme-color" content="#0b111b">
-<title>Better xCloud Desktop</title>
+<meta name="theme-color" content="#0b1018">
+<title>Better xCloud Desktop 4.0 — Preview</title>
 <style>
-:root{color-scheme:dark;--bg:#0b111b;--surface:#121d2a;--surface2:#182638;--line:#26384d;--text:#f1f6fc;--muted:#9aabc0;--blue:#2688ff;--cyan:#5bd3e4}
-*{box-sizing:border-box}
-html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font:14px/1.5 "Segoe UI",Arial,sans-serif}
-body{min-height:100vh;display:grid;grid-template-columns:218px minmax(0,1fr)}
-aside{background:#0e1722;border-right:1px solid var(--line);padding:24px 15px;display:flex;flex-direction:column;gap:28px}
-.brand{display:flex;align-items:center;gap:11px;padding:0 8px}
-.logo{width:36px;height:36px;border-radius:10px;background:linear-gradient(145deg,#2385ff,#36c5d9);display:grid;place-items:center;font-size:18px;font-weight:800;color:#fff}
-.brand strong{display:block;font-size:14px}.brand small{display:block;color:var(--muted);font-size:10px;letter-spacing:1px}
-nav{display:grid;gap:6px}nav a{color:var(--muted);text-decoration:none;padding:10px 12px;border-radius:8px}nav a[aria-current=page],nav a:hover{background:#162b43;color:#fff}
-aside footer{margin-top:auto;padding:12px 8px;border-top:1px solid var(--line);font-size:11px;color:var(--muted)}
-main{width:100%;max-width:1060px;margin:0 auto;padding:38px clamp(18px,5vw,60px)}
-.kicker{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--cyan);font-weight:700}
-h1{font-size:clamp(25px,4vw,34px);line-height:1.15;margin:9px 0 10px;letter-spacing:-.6px}
-.lead{color:#b5c4d6;max-width:560px;margin:0}
-.hero{margin-top:30px;padding:clamp(22px,4vw,36px);border:1px solid #25476a;border-radius:15px;background:linear-gradient(115deg,#142a42,#111e2d 70%,#10303c);display:flex;align-items:center;justify-content:space-between;gap:24px}
-.hero h2{font-size:23px;margin:0 0 8px}.hero p{color:#b7c6d8;max-width:470px;margin:0 0 18px}
-.primary{display:inline-flex;align-items:center;gap:10px;padding:11px 16px;border-radius:8px;background:var(--blue);color:white;text-decoration:none;font-weight:700}
-.primary:hover{background:#1478ed}.primary:focus-visible,a:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
-.mark{font-size:68px;font-weight:800;color:#ffffff12;padding:0 15px;user-select:none}
-.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin-top:17px}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:16px}
-.card h3{font-size:13px;margin:0 0 5px}.card p{font-size:12px;color:var(--muted);margin:0}
-.status{display:inline-flex;align-items:center;gap:8px;color:#a9e9ca;font-size:12px;margin-bottom:12px}
-.dot{width:7px;height:7px;border-radius:50%;background:#59d69a}
-.bottom{margin-top:22px;color:var(--muted);font-size:11px}
-@media(max-width:680px){body{grid-template-columns:1fr}aside{padding:12px 14px;gap:12px;border-right:0;border-bottom:1px solid var(--line)}nav{grid-template-columns:repeat(2,minmax(0,1fr))}nav a{padding:8px 10px;text-align:center}aside footer{display:none}main{padding:25px 16px}.mark{display:none}.grid{grid-template-columns:1fr}}
-@media(prefers-reduced-motion:no-preference){.primary,nav a{transition:background-color .12s ease}}
+:root{color-scheme:dark;--bg:#0b1018;--panel:#111a26;--panel2:#162232;--line:#253448;--text:#eef5ff;--muted:#91a2b8;--blue:#2688ff;--cyan:#54d6e8;--green:#5bd69a}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font:14px/1.5 "Segoe UI",Arial,sans-serif}
+button{font:inherit;color:inherit;cursor:pointer}button:focus-visible,a:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
+.app{min-height:100vh;display:grid;grid-template-columns:218px minmax(0,1fr)}
+.sidebar{background:#0e1621;border-right:1px solid var(--line);padding:22px 14px;display:flex;flex-direction:column;gap:26px}
+.brand{display:flex;align-items:center;gap:10px;padding:0 8px}.logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(145deg,#2488ff,#35c9dc);display:grid;place-items:center;color:white;font-weight:800;font-size:17px}.brand strong{display:block;font-size:14px;letter-spacing:.1px}.brand small{color:var(--muted);font-size:11px}
+.nav{display:grid;gap:6px}.nav button{border:0;background:transparent;text-align:left;padding:11px 12px;border-radius:9px;color:var(--muted);display:flex;gap:11px;align-items:center}.nav button:hover{background:#162232;color:var(--text)}.nav button[aria-current=page]{background:#142b46;color:#fff}.nav .ico{width:18px;text-align:center;color:var(--cyan)}
+.sidebar-foot{margin-top:auto;padding:12px 10px;border-top:1px solid var(--line);color:var(--muted);font-size:11px}
+main{min-width:0;padding:30px clamp(18px,4vw,54px);max-width:1200px;width:100%;margin:0 auto}
+.top{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:30px}.eyebrow{color:var(--cyan);font-size:11px;text-transform:uppercase;letter-spacing:1.4px;font-weight:700}.top h1{margin:3px 0 0;font-size:25px;letter-spacing:-.5px}.status{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:7px 11px;color:var(--muted);font-size:12px;white-space:nowrap}.dot{display:inline-block;width:7px;height:7px;background:var(--green);border-radius:50%;margin-right:7px}
+.hero{border:1px solid #24466a;border-radius:15px;padding:clamp(20px,4vw,34px);background:linear-gradient(110deg,#12253b,#111c2a 65%,#102c3b);display:flex;align-items:center;justify-content:space-between;gap:20px;min-height:190px}.hero h2{font-size:clamp(22px,3vw,30px);line-height:1.15;margin:8px 0}.hero p{color:#b2c2d5;max-width:510px;margin:0 0 18px}.primary{display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:8px;padding:10px 16px;background:var(--blue);font-weight:700;text-decoration:none;color:white}.primary:hover{background:#1476ec}.hero-mark{font-size:68px;font-weight:800;color:#ffffff12;padding:0 18px;user-select:none}
+.section-head{display:flex;justify-content:space-between;align-items:center;margin:26px 0 12px}.section-head h3{margin:0;font-size:15px}.section-head span{color:var(--muted);font-size:12px}
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.card{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:16px;min-height:112px}.card .symbol{color:var(--cyan);font-size:18px}.card h4{margin:8px 0 3px;font-size:13px}.card p{margin:0;color:var(--muted);font-size:12px}
+.note{margin-top:16px;padding:13px 15px;border:1px solid var(--line);border-radius:10px;color:var(--muted);font-size:12px;background:#0e1621}
+.page{display:none}.page.active{display:block}.setting{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:15px 0;border-bottom:1px solid var(--line)}.setting p{margin:3px 0 0;color:var(--muted);font-size:12px}.setting button{border:1px solid var(--line);background:var(--panel2);border-radius:7px;padding:7px 11px}.plain{color:var(--muted)}
+@media(max-width:720px){.app{grid-template-columns:1fr}.sidebar{padding:12px;border-right:0;border-bottom:1px solid var(--line);gap:12px}.brand{padding:0 4px}.nav{grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}.nav button{justify-content:center;padding:9px 4px;font-size:11px;gap:5px;flex-direction:column}.sidebar-foot{display:none}main{padding:22px 16px}.hero-mark{display:none}.cards{grid-template-columns:1fr}.top{align-items:flex-start;flex-direction:column}}
+@media(prefers-reduced-motion:no-preference){.nav button,.primary{transition:background-color .12s ease}}
 </style>
 </head>
 <body>
-<aside>
-  <div class="brand"><div class="logo" aria-hidden="true">B</div><div><strong>Better xCloud</strong><small>DESKTOP · 4.0 BETA</small></div></div>
-  <nav aria-label="Navegación principal">
-    <a href="#inicio" aria-current="page">⌂ &nbsp; Inicio</a>
-    <a href="https://www.xbox.com/es-CL/play">▣ &nbsp; Xbox Cloud Gaming</a>
-  </nav>
-  <footer>Cliente de escritorio comunitario no oficial.<br>Interfaz ligera · Windows 10/11</footer>
+<div class="app">
+<aside class="sidebar">
+ <div class="brand"><div class="logo">B</div><div><strong>Better xCloud</strong><small>DESKTOP · 4.0 PREVIEW</small></div></div>
+ <nav class="nav" aria-label="Navegación principal">
+  <button data-page="home" aria-current="page"><span class="ico">⌂</span>Inicio</button>
+  <button data-page="cloud"><span class="ico">▣</span>Jugar</button>
+  <button data-page="lab"><span class="ico">⌘</span>Laboratorio</button>
+  <button data-page="settings"><span class="ico">⚙</span>Ajustes</button>
+ </nav>
+ <div class="sidebar-foot">Cliente comunitario no oficial.<br>Hecho para ser ligero.</div>
 </aside>
-<main id="inicio">
-  <div class="kicker">Tu espacio de juego</div>
-  <h1>Bienvenido a<br>Better xCloud Desktop.</h1>
-  <p class="lead">Accede a Xbox Cloud Gaming desde una aplicación de escritorio independiente, con Better xCloud integrado.</p>
-  <section class="hero" aria-labelledby="launch-title">
-    <div>
-      <div class="status"><span class="dot"></span>Aplicación lista</div>
-      <h2 id="launch-title">¿Listo para jugar?</h2>
-      <p>Abre tu sesión de Xbox Cloud Gaming. Tus controles y la integración de Better xCloud se activan al cargar la página de juego.</p>
-      <a class="primary" href="https://www.xbox.com/es-CL/play">Abrir Xbox Cloud Gaming <span aria-hidden="true">→</span></a>
-    </div>
-    <div class="mark" aria-hidden="true">BX</div>
-  </section>
-  <section class="grid" aria-label="Información de la aplicación">
-    <article class="card"><h3>Actualizaciones automáticas</h3><p>Better xCloud comprueba periódicamente si existe una versión nueva. La descarga se valida y se aplica al reiniciar.</p></article>
-    <article class="card"><h3>Diseño ligero</h3><p>Fuentes del sistema, estilos locales y JavaScript mínimo. Sin fondos animados ni bibliotecas visuales adicionales.</p></article>
-  </section>
-  <p class="bottom">Better xCloud Desktop 4.0.0-beta.1 · Para volver aquí desde el juego, pulsa Alt + Inicio.</p>
+<main>
+ <header class="top"><div><div class="eyebrow">Experiencia de escritorio</div><h1 id="page-title">Inicio</h1></div><div class="status"><span class="dot"></span>Interfaz lista · Preview</div></header>
+ <section class="page active" id="home">
+  <div class="hero"><div><div class="eyebrow">Xbox Cloud Gaming</div><h2>Tu biblioteca,<br>lista para jugar.</h2><p>Abre Xbox Cloud Gaming en tu entorno Better xCloud. La transmisión sigue usando los servicios de Xbox.</p><a class="primary" href="https://www.xbox.com/play" target="_blank" rel="noopener noreferrer">Abrir Xbox Cloud Gaming ↗</a></div><div class="hero-mark" aria-hidden="true">BX</div></div>
+  <div class="section-head"><h3>Acceso rápido</h3><span>Herramientas del cliente</span></div>
+  <div class="cards">
+   <article class="card"><div class="symbol">◉</div><h4>Stream Health</h4><p>Diagnóstico de la transmisión.</p></article>
+   <article class="card"><div class="symbol">⌘</div><h4>Ultra Assistant</h4><p>Herramientas rápidas del cliente.</p></article>
+   <article class="card"><div class="symbol">◎</div><h4>Controles</h4><p>Perfiles para Xbox, PlayStation y Switch.</p></article>
+  </div>
+  <div class="note">Vista previa visual 4.0. Los accesos de herramientas son informativos en esta maqueta; se conectarán a las funciones existentes al integrar el código fuente.</div>
+ </section>
+ <section class="page" id="cloud"><div class="hero"><div><div class="eyebrow">Jugar</div><h2>Xbox Cloud Gaming</h2><p>Inicia tu sesión de juego en la página oficial. Esta vista previa no modifica ni reemplaza el motor de streaming existente.</p><a class="primary" href="https://www.xbox.com/play" target="_blank" rel="noopener noreferrer">Ir a Xbox Cloud Gaming ↗</a></div></div></section>
+ <section class="page" id="lab"><div class="section-head"><h3>Laboratorio</h3><span>Herramientas previstas</span></div><div class="cards"><article class="card"><div class="symbol">◉</div><h4>Stream Health</h4><p>Se conectará al diagnóstico de la beta actual.</p></article><article class="card"><div class="symbol">⌘</div><h4>Ultra Assistant</h4><p>Se conservarán sus accesos y funciones.</p></article><article class="card"><div class="symbol">◎</div><h4>Perfiles de control</h4><p>Xbox · PlayStation · Nintendo/Switch.</p></article></div></section>
+ <section class="page" id="settings"><div class="section-head"><h3>Preferencias</h3><span>Configuración ligera</span></div><div class="card"><div class="setting"><div><strong>Interfaz compacta</strong><p>Diseño reducido para pantallas de portátil.</p></div><span class="plain">Activada</span></div><div class="setting"><div><strong>Animaciones</strong><p>Solo transiciones breves; respeta reducir movimiento.</p></div><span class="plain">Mínimas</span></div><div class="setting"><div><strong>Recursos en segundo plano</strong><p>Evitar trabajo visual cuando el panel está oculto.</p></div><span class="plain">Objetivo 4.0</span></div></div></section>
 </main>
+</div>
+<script>
+(()=>{const buttons=[...document.querySelectorAll('[data-page]')];const pages=[...document.querySelectorAll('.page')];const title=document.getElementById('page-title');const labels={home:'Inicio',cloud:'Jugar',lab:'Laboratorio',settings:'Ajustes'};function show(id){pages.forEach(p=>p.classList.toggle('active',p.id===id));buttons.forEach(b=>{if(b.dataset.page===id)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});title.textContent=labels[id]||'Inicio'}buttons.forEach(b=>b.addEventListener('click',()=>show(b.dataset.page)));})();
+</script>
 </body>
 </html>
