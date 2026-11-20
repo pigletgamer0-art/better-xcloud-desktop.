@@ -140,16 +140,16 @@ jobs:
         run: |
           set -euo pipefail
           go build -trimpath -ldflags='-H=windowsgui -s -w' -o BetterXcloud-Desktop-4.0.0-beta.1-Setup.exe .
-          sha256sum BetterXcloud-Desktop-4.0.0-beta.1-Validation.exe > BetterXcloud-Desktop-4.0.0-beta.1-Setup.sha256.txt
-          stat -c 'Windows executable size: %s bytes' BetterXcloud-Desktop-4.0.0-beta.1-Validation.exe
+          sha256sum BetterXcloud-Desktop-4.0.0-beta.1-Setup.exe > BetterXcloud-Desktop-4.0.0-beta.1-Setup.sha256.txt
+          stat -c 'Windows executable size: %s bytes' BetterXcloud-Desktop-4.0.0-beta.1-Setup.exe
 
       - name: Upload beta validation build and upstream manifest
         uses: actions/upload-artifact@v4
         with:
           name: BetterXcloud-Desktop-4.0.0-beta.1-validation
           path: |
-            build/repo_src/installer/BetterXcloud-Desktop-4.0.0-beta.1-Validation.exe
-            build/repo_src/installer/BetterXcloud-Desktop-4.0.0-beta.1-Validation.sha256.txt
+            build/repo_src/installer/BetterXcloud-Desktop-4.0.0-beta.1-Setup.exe
+            build/repo_src/installer/BetterXcloud-Desktop-4.0.0-beta.1-Setup.sha256.txt
             build/repo_src/UPSTREAM-BETTER-XCLOUD.json
             build/repo_src/UPSTREAM-BETTER-XCLOUD.sha256
           if-no-files-found: error
@@ -163,6 +163,49 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          cat > /tmp/release-notes.md <<'RELEASE_NOTES'
+          Better xCloud Desktop — Desarrollo 4.0
+          
+          Versión objetivo: 4.0.0-beta.1
+          
+          Aplicación comunitaria para Windows 10/11 x64 que ejecuta Xbox Cloud Gaming en un runtime de escritorio propio e integra Better xCloud.
+          
+          ## Interfaz 4.0
+          - Navegación: Inicio, Jugar, Laboratorio y Ajustes.
+          - Tema oscuro con acentos azules y cian.
+          - Diseño adaptable a pantallas de portátil y ventanas pequeñas.
+          - Tipografía del sistema y recursos locales.
+          - Sin framework visual, fuentes remotas ni animaciones pesadas.
+          - Accesibilidad básica: foco visible, navegación por teclado y respeto a prefers-reduced-motion.
+          
+          Los paneles de Laboratorio y Ajustes son una vista previa visual hasta que se conecten con las funciones existentes. No representan controles ya implementados.
+          
+          ## Objetivos de rendimiento
+          - Mantener un único runtime Electron/Chromium.
+          - No modificar el pipeline de streaming durante el rediseño visual.
+          - Evitar trabajo periódico en paneles ocultos cuando no sea necesario.
+          - Reducir escrituras repetidas de configuración.
+          - Medir inicio, memoria, CPU en reposo y estabilidad durante una sesión antes de afirmar mejoras.
+          
+          ## Funciones que deben conservarse
+          - Perfiles y distribución de controles Xbox, PlayStation y Nintendo/Switch.
+          - Native Look.
+          - MIC Sensitivity.
+          - Ultra Assistant y Stream Health.
+          - Sesión, ajustes y datos del usuario.
+          - Instalador y desinstalador de Windows.
+          
+          ## Sincronización con Better xCloud Original
+          La aplicación comprueba nuevas versiones de redphx/better-xcloud. La actualización debe validarse antes de reemplazar la copia local y solicitar el reinicio para activarla. No se debe sustituir el script durante una sesión activa. Si falla la descarga o la validación, se conserva la versión que ya funciona.
+          
+          ## Estado de esta beta
+          Esta compilación es preliminar. La integración completa de la interfaz, las pruebas de regresión de controles, audio, micrófono y streaming, las pruebas de instalación/actualización y las mediciones de rendimiento siguen pendientes.
+          
+          No es una versión estable. La publicación final se hará únicamente después de superar las pruebas.
+          
+          ## Licencias y atribución
+          Better xCloud fue creado por redphx y se distribuye bajo licencia MIT. Se conservan sus avisos de copyright y la licencia original. Better xCloud Desktop es un cliente comunitario no oficial, no afiliado con Microsoft, Xbox ni con el autor original de Better xCloud.
+          RELEASE_NOTES
           tag='v4.0.0-beta.1'
           exe='build/repo_src/installer/BetterXcloud-Desktop-4.0.0-beta.1-Setup.exe'
           sums='build/repo_src/installer/BetterXcloud-Desktop-4.0.0-beta.1-Setup.sha256.txt'
@@ -172,12 +215,11 @@ jobs:
           test -s "$sums"
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release upload "$tag" "$exe" "$sums" "$manifest" "$upstream_sum" --clobber
-            gh release edit "$tag" --title 'Better Xcloud Desktop 4.0.0-beta.1' --prerelease \
-              --notes $'Primera beta instalable para Windows x64.\n\n- Interfaz Desktop 4.0 en integración inicial.\n- Mejoras de rendimiento y consumo contenidas en los parches 4.0.\n- Incluye la versión de Better xCloud Original validada durante esta compilación.\n- Incluye checksum SHA-256.\n\nBeta de pruebas: algunas secciones siguen siendo preliminares. No es una versión estable. Proyecto comunitario no afiliado a Microsoft, Xbox ni al proyecto Better xCloud.'
+            gh release edit "$tag" --title 'Better xCloud Desktop 4.0.0-beta.1' --prerelease --notes-file /tmp/release-notes.md
           else
             gh release create "$tag" "$exe" "$sums" "$manifest" "$upstream_sum" \
               --target "$GITHUB_REF_NAME" \
-              --title 'Better Xcloud Desktop 4.0.0-beta.1' \
+              --title 'Better xCloud Desktop 4.0.0-beta.1' \
               --prerelease \
-              --notes $'Primera beta instalable para Windows x64.\n\n- Interfaz Desktop 4.0 en integración inicial.\n- Mejoras de rendimiento y consumo contenidas en los parches 4.0.\n- Incluye la versión de Better xCloud Original validada durante esta compilación.\n- Incluye checksum SHA-256.\n\nBeta de pruebas: algunas secciones siguen siendo preliminares. No es una versión estable. Proyecto comunitario no afiliado a Microsoft, Xbox ni al proyecto Better xCloud.'
+              --notes-file /tmp/release-notes.md
           fi
