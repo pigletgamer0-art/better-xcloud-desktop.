@@ -34,20 +34,20 @@ Aplicación independiente para **Windows 10/11 x64** que ejecuta Xbox Cloud Gami
 
 El instalador no está firmado digitalmente, por lo que Windows SmartScreen puede mostrar una advertencia.
 
-## Compilar el instalador
+## Compilar la beta de validación
 
 Requisitos: **Go 1.22 o superior**.
 
-Antes de compilar, copia `app/` dentro de `installer/embedded/app/`. Luego, desde `installer/`:
+Para reproducir la compilación de validación, copia `app/` dentro de `installer/embedded/app/`. Luego, desde `installer/`:
 
 ```bat
 set GOOS=windows
 set GOARCH=amd64
 set CGO_ENABLED=0
-go build -trimpath -ldflags="-H=windowsgui -s -w" -o BetterXcloud-Desktop-Setup-v2.6.exe .
+go build -trimpath -ldflags="-H=windowsgui -s -w" -o BetterXcloud-Desktop-4.0.0-beta.1-Validation.exe .
 ```
 
-El runtime de Electron no se incluye dentro del instalador; se descarga y verifica durante la primera instalación.
+Este ejecutable de validación no debe confundirse con el instalador oficial. El runtime de Electron no se incluye; el instalador final lo descargará y verificará durante la primera instalación.
 
 ## Verificación del runtime
 
