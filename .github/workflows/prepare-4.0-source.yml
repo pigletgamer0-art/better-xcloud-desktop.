@@ -7,6 +7,7 @@ on:
     paths:
       - 'docs/**'
       - 'prototype/**'
+      - 'patches/**'
       - '.github/workflows/prepare-4.0-source.yml'
   workflow_dispatch:
 
@@ -42,6 +43,16 @@ jobs:
           unzip -q /tmp/repo-source-min.zip -d source-inspection
           find source-inspection -maxdepth 4 -type f -printf '%P\n' | sort > source-inspection/FILE-LIST.txt
           cat source-inspection/FILE-LIST.txt
+
+      - name: Apply lightweight Electron patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd source-inspection/repo_src
+          patch --batch -p1 < ../../patches/desktop-4.0-performance.patch
+          node --check app/main.js
+          ! grep -Eq 'disable-background-timer-throttling|disable-renderer-backgrounding|disable-backgrounding-occluded-windows|backgroundThrottling: false' app/main.js
+          grep -nE 'width: 1280|minWidth: 800|backgroundThrottling' app/main.js || true
 
       - name: Upload unpacked source for review
         uses: actions/upload-artifact@v4
