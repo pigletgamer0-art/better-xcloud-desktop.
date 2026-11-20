@@ -6,19 +6,19 @@ Aplicación independiente para **Windows 10/11 x64** que ejecuta Xbox Cloud Gami
 
 ## Versión actual
 
-**2.6.0**
+**4.0.0-beta.1 (en desarrollo)**
 
 ### Incluye
 
 - App independiente: no abre Microsoft Edge y no requiere Tampermonkey.
-- Better xCloud 6.7.12 como versión estable integrada.
+- Better xCloud Original se obtiene desde el último release compatible de redphx/better-xcloud durante la compilación.
 - Instalador y desinstalador para Windows.
 - Registro en **Configuración → Aplicaciones instaladas**.
 - Accesos directos en Menú Inicio.
 - Sesión y ajustes guardados en un perfil separado.
-- Actualización automática del núcleo oficial de Better xCloud con validación antes de aplicarla.
+- Detección periódica de nuevas versiones oficiales de Better xCloud (descarga validada y aviso para reiniciar).
 
-## Controles
+## Estado de la versión 4.0\n\nEsta rama corresponde a la beta de desarrollo. Los ejecutables de validación no son instaladores estables ni deben confundirse con la publicación oficial 4.0.0. Consulta [el plan de lanzamiento](docs/RELEASE-4.0.md).\n\n## Controles
 
 - `F11`: pantalla completa
 - `Ctrl + R`: recargar
