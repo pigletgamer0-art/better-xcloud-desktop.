@@ -1,0 +1,35 @@
+--- a/app/main.js
++++ b/app/main.js
+@@ -14,9 +14,6 @@
+ app.setName(APP_NAME);
+ app.commandLine.appendSwitch('lang', 'es-CL');
+ app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
+-app.commandLine.appendSwitch('disable-background-timer-throttling');
+-app.commandLine.appendSwitch('disable-renderer-backgrounding');
+-app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
+ 
+ // Windows 11 25H2 + algunos drivers Intel pueden dejar Chromium/Electron en negro
+ // cuando el proceso GPU intenta arrancar dentro de su sandbox. Desactivar SOLO el
+@@ -351,10 +348,10 @@
+ 
+ function createWindow() {
+   const win = new BrowserWindow({
+-    width: 1440,
+-    height: 900,
+-    minWidth: 960,
+-    minHeight: 600,
++    width: 1280,
++    height: 800,
++    minWidth: 800,
++    minHeight: 520,
+     title: APP_NAME,
+     icon: path.join(__dirname, 'icon.png'),
+     backgroundColor: '#0f0f0f',
+@@ -365,7 +362,6 @@
+       nodeIntegration: false,
+       contextIsolation: true,
+       sandbox: false,
+-      backgroundThrottling: false,
+       spellcheck: false
+     }
+   });
