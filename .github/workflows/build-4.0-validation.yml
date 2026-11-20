@@ -13,7 +13,7 @@ on:
     - cron: '17 8 * * *'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   windows-build:
@@ -130,7 +130,7 @@ jobs:
           mkdir -p build/repo_src/installer/embedded
           cp -R build/repo_src/app build/repo_src/installer/embedded/app
 
-      - name: Cross-compile Windows beta validation executable
+      - name: Build Windows beta installer executable
         shell: bash
         working-directory: build/repo_src/installer
         env:
@@ -139,9 +139,9 @@ jobs:
           CGO_ENABLED: '0'
         run: |
           set -euo pipefail
-          go build -trimpath -ldflags='-H=windowsgui -s -w' -o BetterXcloud-Desktop-4.0.0-beta.1-Validation.exe .
-          sha256sum BetterXcloud-Desktop-4.0.0-beta.1-Validation.exe > BetterXcloud-Desktop-4.0.0-beta.1-Validation.sha256.txt
-          stat -c 'Validation executable size: %s bytes' BetterXcloud-Desktop-4.0.0-beta.1-Validation.exe
+          go build -trimpath -ldflags='-H=windowsgui -s -w' -o BetterXcloud-Desktop-4.0.0-beta.1-Setup.exe .
+          sha256sum BetterXcloud-Desktop-4.0.0-beta.1-Validation.exe > BetterXcloud-Desktop-4.0.0-beta.1-Setup.sha256.txt
+          stat -c 'Windows executable size: %s bytes' BetterXcloud-Desktop-4.0.0-beta.1-Validation.exe
 
       - name: Upload beta validation build and upstream manifest
         uses: actions/upload-artifact@v4
@@ -155,3 +155,29 @@ jobs:
           if-no-files-found: error
           compression-level: 0
           retention-days: 3
+
+      - name: Publish Windows EXE to GitHub Releases
+        if: github.event_name == 'workflow_dispatch'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag='v4.0.0-beta.1'
+          exe='build/repo_src/installer/BetterXcloud-Desktop-4.0.0-beta.1-Setup.exe'
+          sums='build/repo_src/installer/BetterXcloud-Desktop-4.0.0-beta.1-Setup.sha256.txt'
+          manifest='build/repo_src/UPSTREAM-BETTER-XCLOUD.json'
+          upstream_sum='build/repo_src/UPSTREAM-BETTER-XCLOUD.sha256'
+          test -s "$exe"
+          test -s "$sums"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" "$exe" "$sums" "$manifest" "$upstream_sum" --clobber
+            gh release edit "$tag" --title 'Better Xcloud Desktop 4.0.0-beta.1' --prerelease \
+              --notes $'Primera beta instalable para Windows x64.\n\n- Interfaz Desktop 4.0 en integración inicial.\n- Mejoras de rendimiento y consumo contenidas en los parches 4.0.\n- Incluye la versión de Better xCloud Original validada durante esta compilación.\n- Incluye checksum SHA-256.\n\nBeta de pruebas: algunas secciones siguen siendo preliminares. No es una versión estable. Proyecto comunitario no afiliado a Microsoft, Xbox ni al proyecto Better xCloud.'
+          else
+            gh release create "$tag" "$exe" "$sums" "$manifest" "$upstream_sum" \
+              --target "$GITHUB_REF_NAME" \
+              --title 'Better Xcloud Desktop 4.0.0-beta.1' \
+              --prerelease \
+              --notes $'Primera beta instalable para Windows x64.\n\n- Interfaz Desktop 4.0 en integración inicial.\n- Mejoras de rendimiento y consumo contenidas en los parches 4.0.\n- Incluye la versión de Better xCloud Original validada durante esta compilación.\n- Incluye checksum SHA-256.\n\nBeta de pruebas: algunas secciones siguen siendo preliminares. No es una versión estable. Proyecto comunitario no afiliado a Microsoft, Xbox ni al proyecto Better xCloud.'
+          fi
