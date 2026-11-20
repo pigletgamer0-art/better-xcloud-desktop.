@@ -26,19 +26,19 @@ Notas completas: `BETA-v2.7.7.md` en la rama `beta-v2.7.7`.
 
 ## Versión estable actual
 
-**2.6.0**
+**4.0.0-beta.1 (en desarrollo)**
 
 ### Incluye
 
 - App independiente: no abre Microsoft Edge y no requiere Tampermonkey.
-- Better xCloud 6.7.12 como versión estable integrada.
+- Better xCloud Original se obtiene desde el último release compatible de redphx/better-xcloud durante la compilación.
 - Instalador y desinstalador para Windows.
 - Registro en **Configuración → Aplicaciones instaladas**.
 - Accesos directos en Menú Inicio.
 - Sesión y ajustes guardados en un perfil separado.
-- Actualización automática del núcleo oficial de Better xCloud con validación antes de aplicarla.
+- Detección periódica de nuevas versiones oficiales de Better xCloud (descarga validada y aviso para reiniciar).
 
-## Controles
+## Estado de la versión 4.0\n\nEsta rama corresponde a la beta de desarrollo. Los ejecutables de validación no son instaladores estables ni deben confundirse con la publicación oficial 4.0.0. Consulta [el plan de lanzamiento](docs/RELEASE-4.0.md).\n\n## Controles
 
 - `F11`: pantalla completa
 - `Ctrl + R`: recargar
@@ -54,20 +54,20 @@ Notas completas: `BETA-v2.7.7.md` en la rama `beta-v2.7.7`.
 
 El instalador no está firmado digitalmente, por lo que Windows SmartScreen puede mostrar una advertencia.
 
-## Compilar el instalador
+## Compilar la beta de validación
 
 Requisitos: **Go 1.22 o superior**.
 
-Antes de compilar, copia `app/` dentro de `installer/embedded/app/`. Luego, desde `installer/`:
+Para reproducir la compilación de validación, copia `app/` dentro de `installer/embedded/app/`. Luego, desde `installer/`:
 
 ```bat
 set GOOS=windows
 set GOARCH=amd64
 set CGO_ENABLED=0
-go build -trimpath -ldflags="-H=windowsgui -s -w" -o BetterXcloud-Desktop-Setup-v2.6.exe .
+go build -trimpath -ldflags="-H=windowsgui -s -w" -o BetterXcloud-Desktop-4.0.0-beta.1-Validation.exe .
 ```
 
-El runtime de Electron no se incluye dentro del instalador; se descarga y verifica durante la primera instalación.
+Este ejecutable de validación no debe confundirse con el instalador oficial. El runtime de Electron no se incluye; el instalador final lo descargará y verificará durante la primera instalación.
 
 ## Verificación del runtime
 

@@ -1,0 +1,157 @@
+name: Desktop 4.0 beta validation
+
+on:
+  push:
+    branches:
+      - feature/desktop-4.0-ui-performance
+    paths:
+      - 'patches/**'
+      - 'app-4.0/**'
+      - '.github/workflows/build-4.0-validation.yml'
+  workflow_dispatch:
+  schedule:
+    - cron: '17 8 * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  windows-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.x'
+          cache: false
+
+      - name: Reconstruct and verify source archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import base64, hashlib
+          parts = sorted(Path('source-package').glob('part-*.b64'))
+          if len(parts) != 8:
+              raise SystemExit(f'Expected 8 source chunks, found {len(parts)}')
+          data = base64.b64decode(''.join(p.read_text(encoding='utf-8') for p in parts), validate=True)
+          expected = 'cb526df0b52c22b395637ce1f1d686668835d484bfd64933db319221166f734b'
+          actual = hashlib.sha256(data).hexdigest()
+          if actual != expected:
+              raise SystemExit(f'Source archive SHA-256 mismatch: {actual}')
+          Path('/tmp/repo-source-min.zip').write_bytes(data)
+          print(f'Verified source archive: {actual}')
+          PY
+          mkdir -p build/repo_src
+          unzip -q /tmp/repo-source-min.zip -d build
+
+      - name: Apply Desktop 4.0 patches
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd build/repo_src
+          patch --batch -p1 < ../../patches/desktop-4.0-performance.patch
+          patch --batch -p1 < ../../patches/desktop-4.0-updater.patch
+          patch --batch -p1 < ../../patches/desktop-4.0-shell.patch
+          cp ../../app-4.0/home.html app/home.html
+          node --check app/main.js
+          node --check app/preload.js
+          ! grep -Eq 'disable-background-timer-throttling|disable-renderer-backgrounding|disable-backgrounding-occluded-windows|backgroundThrottling: false' app/main.js
+          grep -q 'width: 1280' app/main.js
+          grep -q 'minWidth: 800' app/main.js
+          grep -q "APP_VERSION = '4.0.0-beta.1'" app/main.js
+          grep -q 'setInterval(runCoreUpdateCheck, 60 \* 60 \* 1000)' app/main.js
+
+      - name: Download and validate latest Better xCloud release
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, urllib.request
+          req = urllib.request.Request(
+              'https://api.github.com/repos/redphx/better-xcloud/releases/latest',
+              headers={'Accept': 'application/vnd.github+json', 'User-Agent': 'BetterXcloudDesktop-4.0'}
+          )
+          with urllib.request.urlopen(req, timeout=30) as response:
+              release = json.load(response)
+          tag = release.get('tag_name', '')
+          if not tag.startswith('v') or not tag[1:]:
+              raise SystemExit(f'Unexpected upstream release tag: {tag!r}')
+          assets = [a for a in release.get('assets', []) if a.get('name') == 'better-xcloud.user.js']
+          if len(assets) != 1:
+              raise SystemExit('Expected exactly one better-xcloud.user.js release asset')
+          asset = assets[0]
+          if not asset.get('browser_download_url'):
+              raise SystemExit('Upstream release asset has no download URL')
+          with open('/tmp/upstream-release.json', 'w', encoding='utf-8') as f:
+              json.dump({
+                  'repository': 'redphx/better-xcloud',
+                  'tag': tag,
+                  'version': tag[1:],
+                  'published_at': release.get('published_at'),
+                  'release_url': release.get('html_url'),
+                  'asset_url': asset['browser_download_url'],
+                  'asset_size': asset.get('size')
+              }, f, indent=2)
+          print(f"Latest upstream release: {tag}")
+          PY
+          UPSTREAM_URL="$(python -c "import json; print(json.load(open('/tmp/upstream-release.json'))['asset_url'])")"
+          UPSTREAM_VERSION="$(python -c "import json; print(json.load(open('/tmp/upstream-release.json'))['version'])")"
+          curl --fail --location --retry 3 --retry-delay 2 "$UPSTREAM_URL" -o build/repo_src/app/scripts/better-xcloud.user.js
+          export UPSTREAM_VERSION
+          node - <<'NODE'
+          const fs = require('fs');
+          const source = fs.readFileSync('build/repo_src/app/scripts/better-xcloud.user.js', 'utf8');
+          const expected = process.env.UPSTREAM_VERSION;
+          const version = source.match(/^\s*\/\/\s*@version\s+([^\s]+)\s*$/m)?.[1]?.trim();
+          if (source.length < 100000 || source.length > 5000000) throw new Error('Unexpected upstream script size');
+          if (!/^\s*\/\/\s*==UserScript==/m.test(source)) throw new Error('Missing userscript header');
+          if (!/^\s*\/\/\s*@name\s+Better xCloud\s*$/m.test(source)) throw new Error('Unexpected userscript name');
+          if (!/^\s*\/\/\s*@license\s+MIT\s*$/m.test(source)) throw new Error('Unexpected userscript license');
+          if (version !== expected) throw new Error(`Release tag ${expected} does not match script version ${version}`);
+          if (!source.includes('let $style = CE("style", !1, css);document.documentElement.appendChild($style);}')) {
+            throw new Error('Upstream release is not compatible with the current desktop injector');
+          }
+          new Function(source);
+          console.log(`Validated Better xCloud ${version}`);
+          NODE
+          node --check build/repo_src/app/scripts/better-xcloud.user.js
+          sha256sum build/repo_src/app/scripts/better-xcloud.user.js > build/repo_src/UPSTREAM-BETTER-XCLOUD.sha256
+          cp /tmp/upstream-release.json build/repo_src/UPSTREAM-BETTER-XCLOUD.json
+
+      - name: Prepare embedded app
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/repo_src/installer/embedded
+          cp -R build/repo_src/app build/repo_src/installer/embedded/app
+
+      - name: Cross-compile Windows beta validation executable
+        shell: bash
+        working-directory: build/repo_src/installer
+        env:
+          GOOS: windows
+          GOARCH: amd64
+          CGO_ENABLED: '0'
+        run: |
+          set -euo pipefail
+          go build -trimpath -ldflags='-H=windowsgui -s -w' -o BetterXcloud-Desktop-4.0.0-beta.1-Validation.exe .
+          sha256sum BetterXcloud-Desktop-4.0.0-beta.1-Validation.exe > BetterXcloud-Desktop-4.0.0-beta.1-Validation.sha256.txt
+          stat -c 'Validation executable size: %s bytes' BetterXcloud-Desktop-4.0.0-beta.1-Validation.exe
+
+      - name: Upload beta validation build and upstream manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: BetterXcloud-Desktop-4.0.0-beta.1-validation
+          path: |
+            build/repo_src/installer/BetterXcloud-Desktop-4.0.0-beta.1-Validation.exe
+            build/repo_src/installer/BetterXcloud-Desktop-4.0.0-beta.1-Validation.sha256.txt
+            build/repo_src/UPSTREAM-BETTER-XCLOUD.json
+            build/repo_src/UPSTREAM-BETTER-XCLOUD.sha256
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 3

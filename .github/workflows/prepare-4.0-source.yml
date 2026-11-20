@@ -1,0 +1,68 @@
+name: Prepare Desktop 4.0 source
+
+on:
+  push:
+    branches:
+      - feature/desktop-4.0-ui-performance
+    paths:
+      - 'docs/**'
+      - 'prototype/**'
+      - 'patches/**'
+      - 'app-4.0/**'
+      - '.github/workflows/prepare-4.0-source.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  prepare-source:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Reconstruct and verify original beta source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import base64, hashlib
+          parts = sorted(Path('source-package').glob('part-*.b64'))
+          if len(parts) != 8:
+              raise SystemExit(f'Expected 8 source chunks; found {len(parts)}')
+          data = base64.b64decode(''.join(p.read_text() for p in parts), validate=True)
+          expected = 'cb526df0b52c22b395637ce1f1d686668835d484bfd64933db319221166f734b'
+          actual = hashlib.sha256(data).hexdigest()
+          if actual != expected:
+              raise SystemExit(f'Source archive checksum mismatch: {actual}')
+          Path('/tmp/repo-source-min.zip').write_bytes(data)
+          print(f'Verified source archive SHA-256: {actual}')
+          PY
+          mkdir -p source-inspection
+          unzip -q /tmp/repo-source-min.zip -d source-inspection
+          find source-inspection -maxdepth 4 -type f -printf '%P\n' | sort > source-inspection/FILE-LIST.txt
+          cat source-inspection/FILE-LIST.txt
+
+      - name: Apply lightweight Electron patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd source-inspection/repo_src
+          patch --batch -p1 < ../../patches/desktop-4.0-performance.patch
+          patch --batch -p1 < ../../patches/desktop-4.0-updater.patch
+          patch --batch -p1 < ../../patches/desktop-4.0-shell.patch
+          cp ../../app-4.0/home.html app/home.html
+          node --check app/main.js
+          ! grep -Eq 'disable-background-timer-throttling|disable-renderer-backgrounding|disable-backgrounding-occluded-windows|backgroundThrottling: false' app/main.js
+          grep -nE 'width: 1280|minWidth: 800|backgroundThrottling' app/main.js || true
+
+      - name: Upload unpacked source for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-4.0-source-inspection
+          path: source-inspection/
+          if-no-files-found: error
+          compression-level: 6
+          retention-days: 3

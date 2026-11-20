@@ -1,0 +1,38 @@
+--- a/app/main.js
++++ b/app/main.js
+@@ -7,3 +7,3 @@
+ const APP_NAME = 'Better xCloud Desktop';
+-const APP_VERSION = '2.6.0';
++const APP_VERSION = '4.0.0-beta.1';
+ const START_URL = 'https://www.xbox.com/es-CL/play';
+@@ -493,5 +493,14 @@
+     configureSession(session.defaultSession);
+     mainWindow = createWindow();
+-    setTimeout(() => { checkCoreUpdate(mainWindow).catch(error => log('core updater failed', error)); }, 8000);
++
++    // Check shortly after startup, then keep Better xCloud in sync with upstream.
++    // The updater validates the script before replacing the cached copy and asks
++    // for a restart; the stream is never hot-swapped while a session is active.
++    const runCoreUpdateCheck = () => {
++      checkCoreUpdate(mainWindow).catch(error => log('core updater failed', error));
++    };
++    setTimeout(runCoreUpdateCheck, 8000);
++    const coreUpdateTimer = setInterval(runCoreUpdateCheck, 60 * 60 * 1000);
++    if (typeof coreUpdateTimer.unref === 'function') coreUpdateTimer.unref();
+ 
+     app.on('web-contents-created', (_event, contents) => {
+--- a/app/package.json
++++ b/app/package.json
+@@ -2,4 +2,4 @@
+   "name": "better-xcloud-desktop",
+-  "version": "2.6.0",
++  "version": "4.0.0-beta.1",
+   "description": "Better xCloud Desktop with integrated Ultra Assistant",
+   "main": "main.js",
+--- a/installer/main.go
++++ b/installer/main.go
+@@ -25,3 +25,3 @@
+ 	appName         = "Better xCloud Desktop"
+-	appVersion      = "2.6.0"
++	appVersion      = "4.0.0-beta.1"
+ 	electronVersion = "44.3.0"
