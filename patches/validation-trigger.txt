@@ -1,0 +1,1 @@
+This file ensures the validation workflow reruns when the Desktop 4.0 patch set changes.
