@@ -1,11 +1,14 @@
 --- a/app/main.js
 +++ b/app/main.js
-@@ -8,3 +8,4 @@
+@@ -7,6 +7,7 @@
+ const APP_NAME = 'Better xCloud Desktop';
  const APP_VERSION = '4.0.0-beta.1';
  const START_URL = 'https://www.xbox.com/es-CL/play';
 +const HOME_PAGE = path.join(__dirname, 'home.html');
  const EDGE_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36 Edg/152.0.0.0';
-@@ -395,6 +396,11 @@
+ const ACCEPT_LANG = 'es-CL,es;q=0.9,en-US;q=0.8,en;q=0.7';
+ const SAFE_GPU = process.argv.includes('--bx-safe-gpu');
+@@ -407,6 +408,12 @@
      const key = String(input.key || '').toLowerCase();
      if (input.type !== 'keyDown') return;
  
@@ -18,7 +21,9 @@
      if (input.key === 'F11') {
        event.preventDefault();
        win.setFullScreen(!win.isFullScreen());
-@@ -444,15 +450,10 @@
+@@ -433,22 +440,12 @@
+     }
+   });
  
 -  // Load Xbox directly. preload.js is attached by BrowserWindow and executes before
 -  // the site's own scripts on every navigation, including cross-process navigations.
@@ -36,13 +41,12 @@
 -
 -    log('initial navigation failed', error);
 -    if (!win.isDestroyed()) win.loadURL(errorPage('Error al iniciar la aplicación', error.message)).catch(() => {});
--  });
 +  // Start on the local, lightweight home screen. Xbox Cloud Gaming is opened
 +  // only when the user chooses it; preload.js injects Better xCloud on that
 +  // trusted Xbox page exactly as it did when the app started there directly.
 +  win.loadFile(HOME_PAGE).catch(error => {
 +    log('initial home screen failed', error);
 +    if (!win.isDestroyed()) win.loadURL(errorPage('Error al iniciar Better xCloud Desktop', error.message)).catch(() => {});
-+  });
+   });
  
    return win;
