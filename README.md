@@ -30,7 +30,7 @@ Notas completas: `BETA-v2.7.7.md` en la rama `beta-v2.7.7`.
 
 ### Incluye
 
-- App independiente: no abre Microsoft Edge y no requiere Tampermonkey.
+- App independiente: al abrirla carga directamente Xbox Cloud Gaming (`https://www.xbox.com/es-CL/play`); no muestra una pantalla de inicio intermedia, no abre Microsoft Edge y no requiere Tampermonkey.
 - Better xCloud Original se obtiene desde el último release compatible de redphx/better-xcloud durante la compilación.
 - Instalador y desinstalador para Windows.
 - Registro en **Configuración → Aplicaciones instaladas**.
