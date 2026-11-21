@@ -56,8 +56,6 @@ jobs:
           cd build/repo_src
           patch --batch -p1 < ../../patches/desktop-4.0-performance.patch
           patch --batch -p1 < ../../patches/desktop-4.0-updater.patch
-          patch --batch -p1 < ../../patches/desktop-4.0-shell.patch
-          cp ../../app-4.0/home.html app/home.html
           node --check app/main.js
           node --check app/preload.js
           ! grep -Eq 'disable-background-timer-throttling|disable-renderer-backgrounding|disable-backgrounding-occluded-windows|backgroundThrottling: false' app/main.js
